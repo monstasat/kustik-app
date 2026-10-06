@@ -645,14 +645,18 @@ function updateGame(dt){
     }
   }
   if(gameSpawn<=0){spawnGameObject();gameSpawn=rand(650,1050)}
-  if(gameBirdTimer<=0 && gameScoreValue>=20){spawnBird();gameBirdTimer=rand(4200,7000)}
+  if(gameBirdTimer<=0 && gameScoreValue>=10){spawnBird();gameBirdTimer=rand(3200,5200)}
 
   const snailBox={x:snail.x+10,y:snail.y+8,w:snail.w-20,h:snail.h-12};
 
   for(const o of gameObjects){
     if(o.type==="birdWarn"){
       o.life-=dt;
-      if(o.life<=0){o.type="bird";o.x=720;o.y=115;o.w=90;o.h=55;o.v=510}
+      if(o.life<=0){
+        o.type="bird";
+        o.x=720;o.y=115;o.w=90;o.h=55;o.v=510;
+        delete o.life;
+      }
       continue;
     }
     o.x-=o.v*dt/1000;
