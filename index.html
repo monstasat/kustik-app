@@ -64,6 +64,7 @@
     .chapter-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
     .chapter-actions{display:flex;gap:6px;flex:0 0 auto}
     .chapter-actions button{padding:6px 8px;font-size:11px}
+    .profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.profile-item{border:1px solid var(--border);background:#fcfdfb;border-radius:16px;padding:11px}.profile-item b{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}.profile-item span{font-size:14px;font-weight:700}.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.bigstat{border:1px solid var(--border);border-radius:16px;padding:13px;background:linear-gradient(145deg,#fbfdf9,#f1f6ee)}.bigstat strong{display:block;font-size:27px;line-height:1;margin-bottom:6px}.bigstat span{font-size:12px;color:var(--muted)}.achievements{display:grid;grid-template-columns:1fr 1fr;gap:9px}.achievement{border:1px solid var(--border);border-radius:16px;padding:12px;background:#fcfdfb}.achievement.locked{filter:grayscale(1);opacity:.48}.achievement .badge{font-size:28px;display:block;margin-bottom:5px}.achievement b{display:block;font-size:13px;margin-bottom:3px}.achievement span{font-size:11px;color:var(--muted)}.edit-profile-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
     .story-form{border-top:1px solid var(--border);margin-top:14px;padding-top:14px}
     .hidden{display:none!important}
     .photo{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#eef2ec}
@@ -102,6 +103,36 @@
         <button class="secondary" onclick="quickEvent('Спрятался в раковину','Покой')">🏠 Спрятался</button>
         <button class="secondary" onclick="quickMeal('🥒 Огурец')">🥒 Ел огурец</button>
       </div>
+    </div>
+    <div class="card">
+      <h2>Личный кабинет Кустика</h2>
+      <div class="profile-grid">
+        <div class="profile-item"><b>Вид</b><span id="profileSpecies">—</span></div>
+        <div class="profile-item"><b>Возраст</b><span id="profileAge">—</span></div>
+        <div class="profile-item"><b>Нашли</b><span id="profileFound">—</span></div>
+        <div class="profile-item"><b>Место</b><span id="profilePlace">—</span></div>
+      </div>
+      <div class="edit-profile-actions"><button class="secondary" onclick="toggleProfileEditor()">✏️ Редактировать профиль</button></div>
+      <div id="profileEditor" class="story-form hidden">
+        <div class="field"><label>Вид</label><input id="editSpecies"></div>
+        <div class="field"><label>Возраст / оценка</label><input id="editAge"></div>
+        <div class="field"><label>Дата знакомства</label><input id="editFound" type="date"></div>
+        <div class="field"><label>Где нашли</label><input id="editPlace"></div>
+        <div class="actions"><button onclick="saveProfile()">Сохранить</button><button class="secondary" onclick="toggleProfileEditor(false)">Отмена</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Статистика</h2>
+      <div class="stats-grid">
+        <div class="bigstat"><strong id="statEvents">0</strong><span>событий в дневнике</span></div>
+        <div class="bigstat"><strong id="statMeals">0</strong><span>кормлений</span></div>
+        <div class="bigstat"><strong id="statPhotos">0</strong><span>фотографий</span></div>
+        <div class="bigstat"><strong id="statActiveDays">0</strong><span>активных дней</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Ачивки Кустика</h2>
+      <div id="achievements" class="achievements"></div>
     </div>
     <div class="card">
       <h2>Активность за 14 дней</h2>
@@ -204,6 +235,7 @@ const defaultData={
   ],
   meals:[{food:"🥒 Огурец",rating:3,date:"2026-10-01T19:00:00"}],
   photos:[],checks:{},coverPhoto:null,statusNow:"Прячется в раковине",shellStatus:"Скол восстановился",
+  profile:{species:"Arianta arbustorum (предположительно)",age:"примерно 1–3 года",found:"2026-09-21",place:"кустик клубники на даче"},
   chapters:[
     {title:"Глава 0: Как всё началось",text:"Кустик жил на кустике клубники на даче. Потом его заметили, забрали домой — и началась совсем другая жизнь."},
     {title:"Глава 1: Новый дом",text:"Террариум, прогулки по рукам, первые наблюдения и открытие главной гастрономической страсти — огурца."},
@@ -217,7 +249,7 @@ let data=(()=>{try{
   const x=localStorage.getItem(KEY);
   if(!x)return clone();
   const saved=JSON.parse(x), base=clone();
-  return {...base,...saved,chapters:Array.isArray(saved.chapters)?saved.chapters:base.chapters};
+  return {...base,...saved,profile:{...base.profile,...(saved.profile||{})},chapters:Array.isArray(saved.chapters)?saved.chapters:base.chapters};
 }catch{return clone()}})();
 function toast(t="Сохранено"){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),1200)}
 function save(){localStorage.setItem(KEY,JSON.stringify(data));render();toast()}
@@ -243,9 +275,13 @@ function renderCover(){
   if(data.coverPhoto){a.innerHTML=`<img src="${data.coverPhoto}" alt="Кустик">`;h.textContent="Главное фото Кустика"}
   else {a.textContent="🐌";h.textContent="Добавь фото в галерею и выбери «На главную»"}
 }
+function renderProfile(){const p=data.profile||{};profileSpecies.textContent=p.species||"—";profileAge.textContent=p.age||"—";profileFound.textContent=p.found?new Date(p.found+"T12:00:00").toLocaleDateString("ru-RU"):"—";profilePlace.textContent=p.place||"—";}
+function renderStats(){const activeDays=new Set(data.events.filter(e=>e.category==="Активность").map(e=>new Date(e.date).toISOString().slice(0,10))).size;statEvents.textContent=data.events.length;statMeals.textContent=data.meals.length;statPhotos.textContent=data.photos.length;statActiveDays.textContent=activeDays;}
+function renderAchievements(){const text=(data.events||[]).map(e=>(e.title+" "+(e.note||"")).toLowerCase()).join(" ");const meals=data.meals||[],photos=data.photos||[],chapters=data.chapters||[];const activeDays=new Set((data.events||[]).filter(e=>e.category==="Активность").map(e=>new Date(e.date).toISOString().slice(0,10))).size;const cucumber=meals.some(m=>String(m.food).toLowerCase().includes("огур"));const items=[{icon:"🍓",title:"Начало легенды",desc:"Найден на кустике клубники",ok:true},{icon:"🥒",title:"Огуречный фанат",desc:"Хотя бы раз ел огурец",ok:cucumber},{icon:"🐚",title:"Крепкая раковина",desc:"Пережил падение и скол",ok:text.includes("скол")||text.includes("паден")},{icon:"🗑️",title:"Спасён!",desc:"Пережил мусорную катастрофу",ok:text.includes("мусор")},{icon:"📸",title:"Фотогеничный",desc:"В галерее есть хотя бы одно фото",ok:photos.length>0},{icon:"📖",title:"Летописец",desc:"Пять глав истории",ok:chapters.length>=5},{icon:"🍽️",title:"Гурман",desc:"Десять кормлений",ok:meals.length>=10},{icon:"🔥",title:"Активист",desc:"Семь разных активных дней",ok:activeDays>=7}];achievements.innerHTML=items.map(a=>`<div class="achievement ${a.ok?"":"locked"}"><span class="badge">${a.icon}</span><b>${esc(a.title)}</b><span>${esc(a.desc)}</span></div>`).join("");}
 function renderStory(){
   const root=document.getElementById("chapters"); if(!root)return;
-  const list=Array.isArray(data.chapters)?data.chapters:[];
+  const list=Array.isArray(data.chapters)?data.profile:{species:"Arianta arbustorum (предположительно)",age:"примерно 1–3 года",found:"2026-09-21",place:"кустик клубники на даче"},
+  chapters:[];
   root.innerHTML=list.length?list.map((c,i)=>`
     <div class="chapter">
       <div class="chapter-head">
@@ -261,7 +297,7 @@ function renderStory(){
     </div>`).join(""):'<div class="empty">История пока пуста.</div>';
 }
 function render(){
-  statusNow.textContent=data.statusNow||"—";shellStatus.textContent=data.shellStatus||"—";renderCover();renderActivity();renderStory();
+  statusNow.textContent=data.statusNow||"—";shellStatus.textContent=data.shellStatus||"—";renderCover();renderActivity();renderProfile();renderStats();renderAchievements();renderStory();
   const ev=[...data.events].sort((a,b)=>new Date(b.date)-new Date(a.date));lastEvent.textContent=ev[0]?.title||"—";
   const counts={};data.meals.forEach(m=>counts[m.food]=(counts[m.food]||0)+(+m.rating||1));
   favoriteFood.textContent=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0]||"—";
@@ -281,6 +317,8 @@ function quickEvent(title,category){data.events.push({title,category,note:"",dat
 function addMeal(){const f=foodName.value.trim();if(!f)return alert("Укажи еду.");data.meals.push({food:f,rating:+foodRating.value,date:new Date().toISOString()});foodName.value="";save()}
 function quickMeal(food){data.meals.push({food,rating:3,date:new Date().toISOString()});data.events.push({title:"Жёстко ел огурец",category:"Активность",note:"",date:new Date().toISOString()});data.statusNow="Активен";save()}
 function addPhoto(){const f=photoInput.files[0];if(!f)return alert("Выбери фото.");const r=new FileReader();r.onload=()=>{data.photos.push({src:r.result,caption:photoCaption.value.trim(),date:new Date().toISOString()});photoInput.value="";photoCaption.value="";save()};r.readAsDataURL(f)}
+function toggleProfileEditor(force){const open=typeof force==="boolean"?force:profileEditor.classList.contains("hidden");profileEditor.classList.toggle("hidden",!open);if(open){const p=data.profile||{};editSpecies.value=p.species||"";editAge.value=p.age||"";editFound.value=p.found||"";editPlace.value=p.place||"";}}
+function saveProfile(){data.profile={species:editSpecies.value.trim(),age:editAge.value.trim(),found:editFound.value,place:editPlace.value.trim()};toggleProfileEditor(false);save();toast("Профиль обновлён");}
 function saveChapter(){
   const title=chapterTitle.value.trim(), text=chapterText.value.trim();
   if(!title)return alert("Напиши название главы.");
