@@ -293,8 +293,7 @@ let data=(()=>{try{
   const x=localStorage.getItem(KEY);
   if(!x)return clone();
   const saved=JSON.parse(x), base=clone();
-  return {...base,...saved,theme:"light",
-  profile:{...base.profile,...(saved.profile||{})},chapters:Array.isArray(saved.chapters)?saved.chapters:base.chapters};
+  return {...base,...saved,theme:saved.theme||base.theme,profile:{...base.profile,...(saved.profile||{})},chapters:Array.isArray(saved.chapters)?saved.chapters:base.chapters};
 }catch{return clone()}})();
 function toast(t="Сохранено"){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),1200)}
 function save(){localStorage.setItem(KEY,JSON.stringify(data));render();toast()}
@@ -361,9 +360,7 @@ function renderStats(){const activeDays=new Set(data.events.filter(e=>e.category
 function renderAchievements(){const text=(data.events||[]).map(e=>(e.title+" "+(e.note||"")).toLowerCase()).join(" ");const meals=data.meals||[],photos=data.photos||[],chapters=data.chapters||[];const activeDays=new Set((data.events||[]).filter(e=>e.category==="Активность").map(e=>new Date(e.date).toISOString().slice(0,10))).size;const cucumber=meals.some(m=>String(m.food).toLowerCase().includes("огур"));const items=[{icon:"🍓",title:"Начало легенды",desc:"Найден на кустике клубники",ok:true},{icon:"🥒",title:"Огуречный фанат",desc:"Хотя бы раз ел огурец",ok:cucumber},{icon:"🐚",title:"Крепкая раковина",desc:"Пережил падение и скол",ok:text.includes("скол")||text.includes("паден")},{icon:"🗑️",title:"Спасён!",desc:"Пережил мусорную катастрофу",ok:text.includes("мусор")},{icon:"📸",title:"Фотогеничный",desc:"В галерее есть хотя бы одно фото",ok:photos.length>0},{icon:"📖",title:"Летописец",desc:"Пять глав истории",ok:chapters.length>=5},{icon:"🍽️",title:"Гурман",desc:"Десять кормлений",ok:meals.length>=10},{icon:"🔥",title:"Активист",desc:"Семь разных активных дней",ok:activeDays>=7}];achievements.innerHTML=items.map(a=>`<div class="achievement ${a.ok?"":"locked"}"><span class="badge">${a.icon}</span><b>${esc(a.title)}</b><span>${esc(a.desc)}</span></div>`).join("");}
 function renderStory(){
   const root=document.getElementById("chapters"); if(!root)return;
-  const list=Array.isArray(data.chapters)?data.theme:"light",
-  profile:{species:"Arianta arbustorum (предположительно)",age:"примерно 1–3 года",found:"2026-09-21",place:"кустик клубники на даче"},
-  chapters:[];
+  const list=Array.isArray(data.chapters)?data.chapters:[];
   root.innerHTML=list.length?list.map((c,i)=>`
     <div class="chapter">
       <div class="chapter-head">
