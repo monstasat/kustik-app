@@ -23,6 +23,10 @@
     .wrap{max-width:760px;margin:auto;padding:16px}
     .hero{background:linear-gradient(145deg,#dcedd8,#f3f8ef);border:1px solid #d7e5d3;border-radius:28px;padding:20px;box-shadow:var(--shadow);position:relative;overflow:hidden}
     .hero:after{content:"🐌";position:absolute;right:8px;top:-6px;font-size:92px;opacity:.11}
+    .profile{display:flex;align-items:center;gap:13px;margin-top:14px;position:relative;z-index:1}
+    .avatar{width:70px;height:70px;border-radius:22px;background:#fff;border:2px solid rgba(255,255,255,.95);box-shadow:0 6px 18px rgba(50,78,52,.12);overflow:hidden;display:grid;place-items:center;font-size:34px;flex:0 0 auto}
+    .avatar img{width:100%;height:100%;object-fit:cover}
+    .profile-copy{min-width:0}.profile-copy b{display:block;font-size:14px}.profile-copy span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
     .eyebrow{display:inline-block;background:#eff7ec;color:#446946;border-radius:999px;padding:6px 10px;font-weight:700;font-size:12px}
     h1{font-size:34px;margin:8px 0 2px;letter-spacing:-.8px}
     .sub{color:var(--muted);font-size:14px}
@@ -49,10 +53,18 @@
     .check label{display:flex;align-items:center;gap:10px;padding:9px 0;margin:0;font-weight:650}
     .check input{width:auto;transform:scale(1.15)}
     .gallery{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .photo-actions{display:flex;gap:6px;margin-top:7px}.photo-actions button{padding:7px 9px;font-size:11px}
+    .activity-chart{height:128px;display:grid;grid-template-columns:repeat(14,1fr);align-items:end;gap:5px;padding-top:8px}
+    .daybar{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:4px}
+    .daybar .bar{width:100%;min-height:5px;border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,#78ae79,#5d9660)}
+    .daybar.zero .bar{background:#e7ece5}
+    .daybar small{font-size:9px;color:var(--muted)}
+    .chapter{border-left:3px solid #8db78e;padding:4px 0 4px 13px;margin:16px 0}
+    .chapter h3{margin:0 0 5px;font-size:17px}.chapter p{margin:0;color:var(--muted);line-height:1.45;font-size:14px}
     .photo{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#eef2ec}
     .photo img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover}.photo .cap{padding:8px}
     .empty{text-align:center;color:var(--muted);padding:24px 10px}
-    .nav{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(730px,calc(100% - 20px));z-index:20;background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:22px;box-shadow:0 12px 34px rgba(37,54,39,.16);padding:7px;display:grid;grid-template-columns:repeat(4,1fr)}
+    .nav{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(730px,calc(100% - 20px));z-index:20;background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:22px;box-shadow:0 12px 34px rgba(37,54,39,.16);padding:7px;display:grid;grid-template-columns:repeat(5,1fr)}
     .nav button{background:transparent;color:var(--muted);padding:8px 4px;font-size:11px}.nav button.active{background:#eaf4e7;color:#315a34}.nav .ico{display:block;font-size:19px;margin-bottom:2px}
     .toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%) translateY(20px);opacity:0;background:#263528;color:#fff;padding:10px 14px;border-radius:999px;font-size:13px;transition:.2s;z-index:40}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -65,6 +77,10 @@
     <div class="eyebrow">Проект «Кустик»</div>
     <h1>Кустик 🐌</h1>
     <div class="sub">Найден на кустике клубники</div>
+    <div class="profile">
+      <div class="avatar" id="heroAvatar">🐌</div>
+      <div class="profile-copy"><b>Фото Кустика</b><span id="heroPhotoHint">Добавь фото в галерею и выбери «На главную»</span></div>
+    </div>
     <div class="stats">
       <div class="stat"><b>Сейчас</b><span id="statusNow">Прячется в раковине</span></div>
       <div class="stat"><b>Любимая еда</b><span id="favoriteFood">🥒 Огурец</span></div>
@@ -81,6 +97,11 @@
         <button class="secondary" onclick="quickEvent('Спрятался в раковину','Покой')">🏠 Спрятался</button>
         <button class="secondary" onclick="quickMeal('🥒 Огурец')">🥒 Ел огурец</button>
       </div>
+    </div>
+    <div class="card">
+      <h2>Активность за 14 дней</h2>
+      <div id="activityChart" class="activity-chart"></div>
+      <div class="small" style="margin-top:8px">Столбик выше = больше записей об активности в этот день.</div>
     </div>
     <div class="card">
       <h2>Террариум</h2>
@@ -133,6 +154,32 @@
     </div>
     <div class="card"><h2>Галерея</h2><div id="gallery" class="gallery"></div></div>
   </section>
+
+  <section id="story" class="screen">
+    <div class="card">
+      <h2>История Кустика</h2>
+      <div class="chapter">
+        <h3>Глава 0: Как всё началось</h3>
+        <p>Кустик жил на кустике клубники на даче. Потом его заметили, забрали домой — и началась совсем другая жизнь.</p>
+      </div>
+      <div class="chapter">
+        <h3>Глава 1: Новый дом</h3>
+        <p>Террариум, прогулки по рукам, первые наблюдения и открытие главной гастрономической страсти — огурца.</p>
+      </div>
+      <div class="chapter">
+        <h3>Глава 2: Падение</h3>
+        <p>После падения у Кустика появился небольшой скол на краю раковины. Он продолжал активно ползать, а скол со временем восстановился.</p>
+      </div>
+      <div class="chapter">
+        <h3>Глава 3: Девять дней тишины</h3>
+        <p>Кустик почти не выходил из раковины несколько дней подряд, но оставался жив и просто пережидал свой улиточный период покоя.</p>
+      </div>
+      <div class="chapter">
+        <h3>Глава 4: Мусорная катастрофа</h3>
+        <p>Из-за плесени содержимое террариума случайно оказалось в мусорке вместе с Кустиком. Его нашли, спасли — и после спасения он жёстко ел огурец.</p>
+      </div>
+    </div>
+  </section>
 </div>
 
 <nav class="nav">
@@ -140,6 +187,7 @@
   <button data-tab="diary"><span class="ico">📔</span>Дневник</button>
   <button data-tab="food"><span class="ico">🥒</span>Еда</button>
   <button data-tab="photos"><span class="ico">📸</span>Фото</button>
+  <button data-tab="story"><span class="ico">🎬</span>История</button>
 </nav>
 <div class="toast" id="toast">Сохранено</div>
 
@@ -152,7 +200,7 @@ const defaultData={
     {title:"Мусорная катастрофа и спасение",category:"Приключение",note:"После спасения активно ел огурец.",date:"2026-10-01T18:00:00"}
   ],
   meals:[{food:"🥒 Огурец",rating:3,date:"2026-10-01T19:00:00"}],
-  photos:[],checks:{},statusNow:"Прячется в раковине",shellStatus:"Скол восстановился"
+  photos:[],checks:{},coverPhoto:null,statusNow:"Прячется в раковине",shellStatus:"Скол восстановился"
 };
 const clone=()=>JSON.parse(JSON.stringify(defaultData));
 let data=(()=>{try{const x=localStorage.getItem(KEY);return x?{...clone(),...JSON.parse(x)}:clone()}catch{return clone()}})();
@@ -160,15 +208,35 @@ function toast(t="Сохранено"){const e=document.getElementById("toast");
 function save(){localStorage.setItem(KEY,JSON.stringify(data));render();toast()}
 function fmt(x){return new Date(x).toLocaleString("ru-RU",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}
 function esc(s=""){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]))}
+function renderActivity(){
+  const root=document.getElementById("activityChart"); if(!root)return;
+  const now=new Date(), days=[];
+  for(let i=13;i>=0;i--){const d=new Date(now);d.setHours(0,0,0,0);d.setDate(d.getDate()-i);days.push(d)}
+  const vals=days.map(d=>{
+    const next=new Date(d);next.setDate(next.getDate()+1);
+    return data.events.filter(e=>e.category==="Активность" && new Date(e.date)>=d && new Date(e.date)<next).length
+  });
+  const max=Math.max(1,...vals);
+  root.innerHTML=days.map((d,i)=>{
+    const h=vals[i]===0?5:Math.max(14,Math.round(vals[i]/max*92));
+    const label=(i===0||i===13||d.getDay()===1)?String(d.getDate()):"";
+    return `<div class="daybar ${vals[i]===0?"zero":""}" title="${d.toLocaleDateString("ru-RU")}: ${vals[i]}"><div class="bar" style="height:${h}px"></div><small>${label}</small></div>`
+  }).join("")
+}
+function renderCover(){
+  const a=document.getElementById("heroAvatar"), h=document.getElementById("heroPhotoHint");
+  if(data.coverPhoto){a.innerHTML=`<img src="${data.coverPhoto}" alt="Кустик">`;h.textContent="Главное фото Кустика"}
+  else {a.textContent="🐌";h.textContent="Добавь фото в галерею и выбери «На главную»"}
+}
 function render(){
-  statusNow.textContent=data.statusNow||"—";shellStatus.textContent=data.shellStatus||"—";
+  statusNow.textContent=data.statusNow||"—";shellStatus.textContent=data.shellStatus||"—";renderCover();renderActivity();
   const ev=[...data.events].sort((a,b)=>new Date(b.date)-new Date(a.date));lastEvent.textContent=ev[0]?.title||"—";
   const counts={};data.meals.forEach(m=>counts[m.food]=(counts[m.food]||0)+(+m.rating||1));
   favoriteFood.textContent=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0]||"—";
   timeline.innerHTML=ev.length?ev.map(e=>`<div class="event"><div class="event-head"><div><strong>${esc(e.title)}</strong><br><span class="tag">${esc(e.category)}</span></div><div class="date">${fmt(e.date)}</div></div>${e.note?`<div style="margin-top:8px">${esc(e.note)}</div>`:""}</div>`).join(""):'<div class="empty">Пока событий нет.</div>';
   const ms=[...data.meals].sort((a,b)=>new Date(b.date)-new Date(a.date));
   mealList.innerHTML=ms.length?ms.map(m=>`<div class="meal"><strong>${esc(m.food)}</strong><div>${+m.rating===3?"🔥 Жёстко ел":+m.rating===2?"🙂 Немного ел":"😐 Почти не тронул"}</div><div class="small">${fmt(m.date)}</div></div>`).join(""):'<div class="empty">Пока кормлений нет.</div>';
-  gallery.innerHTML=data.photos.length?[...data.photos].reverse().map(p=>`<div class="photo"><img src="${p.src}" alt="Кустик"><div class="cap"><strong>${esc(p.caption||"Кустик")}</strong><div class="small">${fmt(p.date)}</div></div></div>`).join(""):'<div class="empty" style="grid-column:1/-1">Добавь первое фото Кустика.</div>';
+  gallery.innerHTML=data.photos.length?[...data.photos].map((p,i)=>({p,i})).reverse().map(({p,i})=>`<div class="photo"><img src="${p.src}" alt="Кустик"><div class="cap"><strong>${esc(p.caption||"Кустик")}</strong><div class="small">${fmt(p.date)}</div><div class="photo-actions"><button class="secondary" onclick="setCoverPhoto(${i})">На главную</button></div></div></div>`).join(""):'<div class="empty" style="grid-column:1/-1">Добавь первое фото Кустика.</div>';
   document.querySelectorAll("[data-check]").forEach(x=>x.checked=!!data.checks[x.dataset.check])
 }
 function addEvent(){
@@ -181,6 +249,7 @@ function quickEvent(title,category){data.events.push({title,category,note:"",dat
 function addMeal(){const f=foodName.value.trim();if(!f)return alert("Укажи еду.");data.meals.push({food:f,rating:+foodRating.value,date:new Date().toISOString()});foodName.value="";save()}
 function quickMeal(food){data.meals.push({food,rating:3,date:new Date().toISOString()});data.events.push({title:"Жёстко ел огурец",category:"Активность",note:"",date:new Date().toISOString()});data.statusNow="Активен";save()}
 function addPhoto(){const f=photoInput.files[0];if(!f)return alert("Выбери фото.");const r=new FileReader();r.onload=()=>{data.photos.push({src:r.result,caption:photoCaption.value.trim(),date:new Date().toISOString()});photoInput.value="";photoCaption.value="";save()};r.readAsDataURL(f)}
+function setCoverPhoto(i){data.coverPhoto=data.photos[i]?.src||null;save();toast("Фото на главной")}
 function exportData(){const b=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="kustik-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 importFile.addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{data={...clone(),...JSON.parse(r.result)};save()}catch{alert("Не удалось прочитать файл.")}};r.readAsText(f)})
 function resetData(){if(confirm("Сбросить все данные?")){localStorage.removeItem(KEY);data=clone();save()}}
