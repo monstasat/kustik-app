@@ -94,8 +94,29 @@
     .photo{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#eef2ec}
     .photo img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover}.photo .cap{padding:8px}
     .empty{text-align:center;color:var(--muted);padding:24px 10px}
-    .nav{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(730px,calc(100% - 20px));z-index:20;background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:22px;box-shadow:0 12px 34px rgba(37,54,39,.16);padding:7px;display:grid;grid-template-columns:repeat(5,1fr)}
-    .nav button{background:transparent;color:var(--muted);padding:8px 4px;font-size:11px}.nav button.active{background:#eaf4e7;color:#315a34}.nav .ico{display:block;font-size:19px;margin-bottom:2px}
+    .nav{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(730px,calc(100% - 20px));z-index:20;background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:22px;box-shadow:0 12px 34px rgba(37,54,39,.16);padding:7px;display:grid;grid-template-columns:repeat(6,1fr)}
+    .nav button{background:transparent;color:var(--muted);padding:8px 2px;font-size:10px}.nav button.active{background:#eaf4e7;color:#315a34}.nav .ico{display:block;font-size:19px;margin-bottom:2px}
+
+    .game-card{padding:12px}
+    .game-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+    .game-stats{display:flex;gap:8px;flex-wrap:wrap}
+    .game-pill{background:var(--soft);color:var(--text);border:1px solid var(--border);border-radius:999px;padding:7px 10px;font-size:12px;font-weight:800}
+    .game-wrap{position:relative;border-radius:20px;overflow:hidden;border:1px solid var(--border);background:linear-gradient(#dff3d8,#f4f0c8 72%,#b78d5b 72%,#9b7248)}
+    #kustikGame{display:block;width:100%;height:auto;touch-action:none}
+    .game-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(19,31,21,.26);backdrop-filter:blur(2px)}
+    .game-overlay.hidden{display:none}
+    .game-modal{width:min(330px,92%);background:rgba(255,255,255,.96);border:1px solid rgba(255,255,255,.9);border-radius:22px;padding:18px;text-align:center;box-shadow:0 15px 40px rgba(24,42,27,.22)}
+    body.dark .game-modal{background:rgba(31,40,34,.97)}
+    .game-modal .big{font-size:43px;margin-bottom:5px}
+    .game-modal h3{margin:0 0 6px;font-size:21px}
+    .game-modal p{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.45}
+    .game-controls{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+    .game-controls button{min-height:48px}
+    .shell-btn.active{background:#6c604f}
+    .game-tip{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.4}
+    .quote-card{background:linear-gradient(145deg,#edf7e9,#fff7e3);border:1px solid #dce8d8;border-radius:18px;padding:14px;margin-top:12px;font-style:italic;line-height:1.45}
+    body.dark .quote-card{background:linear-gradient(145deg,#253229,#342f22);border-color:#38463a}
+
     .toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%) translateY(20px);opacity:0;background:#263528;color:#fff;padding:10px 14px;border-radius:999px;font-size:13px;transition:.2s;z-index:40}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
     @media(max-width:520px){.stats,.mealgrid{grid-template-columns:1fr}}
@@ -228,6 +249,45 @@
     <div class="card"><h2>Галерея</h2><div id="gallery" class="gallery"></div></div>
   </section>
 
+
+  <section id="game" class="screen">
+    <div class="card game-card">
+      <div class="game-head">
+        <div>
+          <h2 style="margin-bottom:3px">Кустик: путь к огурцу</h2>
+          <div class="small">Мини-игра проекта «Кустик»</div>
+        </div>
+        <div class="game-stats">
+          <span class="game-pill">🥒 <span id="gameScore">0</span></span>
+          <span class="game-pill">🏆 <span id="gameBest">0</span></span>
+          <span class="game-pill">❤️ <span id="gameLives">3</span></span>
+        </div>
+      </div>
+
+      <div class="game-wrap" id="gameWrap">
+        <canvas id="kustikGame" width="680" height="420"></canvas>
+        <div class="game-overlay" id="gameOverlay">
+          <div class="game-modal">
+            <div class="big">🐌🥒</div>
+            <h3 id="gameOverlayTitle">Путь к огурцу</h3>
+            <p id="gameOverlayText">Собирай огурцы и капли воды. Когда прилетает птица — прячь Кустика в раковину.</p>
+            <button onclick="startKustikGame()">Начать игру</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="game-controls">
+        <button id="shellButton" class="shell-btn secondary">🐚 Держать: спрятаться</button>
+        <button class="secondary" onclick="toggleGamePause()">⏸ Пауза</button>
+      </div>
+      <div class="game-tip">Удерживай кнопку 🐚 или сам экран игры, чтобы Кустик спрятался. В раковине птица его не заденет, но огурцы он не собирает.</div>
+
+      <div class="quote-card">
+        «Мягкий. Сочный. Легко соскабливается радулой.<br><b>Это была любовь.</b>»
+      </div>
+    </div>
+  </section>
+
   <section id="story" class="screen">
     <div class="card">
       <h2>История Кустика</h2>
@@ -264,6 +324,7 @@
   <button data-tab="diary"><span class="ico">📔</span>Дневник</button>
   <button data-tab="food"><span class="ico">🥒</span>Еда</button>
   <button data-tab="photos"><span class="ico">📸</span>Фото</button>
+  <button data-tab="game"><span class="ico">🎮</span>Игра</button>
   <button data-tab="story"><span class="ico">🎬</span>История</button>
 </nav>
 <div class="toast" id="toast">Сохранено</div>
@@ -279,6 +340,7 @@ const defaultData={
   meals:[{food:"🥒 Огурец",rating:3,date:"2026-10-01T19:00:00"}],
   photos:[],checks:{},coverPhoto:null,statusNow:"Прячется в раковине",shellStatus:"Скол восстановился",
   theme:"light",
+  gameBest:0,
   profile:{species:"Arianta arbustorum (предположительно)",age:"примерно 1–3 года",found:"2026-09-21",place:"кустик клубники на даче"},
   chapters:[
     {title:"Глава 0: Как всё началось",text:"Кустик жил на кустике клубники на даче. Потом его заметили, забрали домой — и началась совсем другая жизнь."},
@@ -486,6 +548,165 @@ importFile.addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;
 function resetData(){if(confirm("Сбросить все данные?")){localStorage.removeItem(KEY);data=clone();save()}}
 document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(b.dataset.tab).classList.add("active");scrollTo({top:0,behavior:"smooth"})});
 document.querySelectorAll("[data-check]").forEach(x=>x.onchange=()=>{data.checks[x.dataset.check]=x.checked;save()});
+
+// ===== Кустик: путь к огурцу =====
+const gameCanvas=document.getElementById("kustikGame");
+const gameCtx=gameCanvas.getContext("2d");
+const gameOverlay=document.getElementById("gameOverlay");
+const shellButton=document.getElementById("shellButton");
+let gameRunning=false,gamePaused=false,gameHidden=false,gameScoreValue=0,gameLivesValue=3;
+let gameLast=0,gameSpawn=0,gameBirdTimer=0,gameFlash=0,gameSpeed=215;
+let gameObjects=[],gameParticles=[];
+const snail={x:110,y:305,w:74,h:48};
+
+function syncGameHud(){
+  gameScore.textContent=gameScoreValue;
+  gameBest.textContent=data.gameBest||0;
+  gameLives.textContent=gameLivesValue;
+}
+function rand(a,b){return a+Math.random()*(b-a)}
+function resetGameWorld(){
+  gameObjects=[];gameParticles=[];gameSpawn=0;gameBirdTimer=0;gameFlash=0;gameSpeed=215;
+  gameScoreValue=0;gameLivesValue=3;gameHidden=false;shellButton.classList.remove("active");
+  syncGameHud();
+}
+function startKustikGame(){
+  resetGameWorld();gameRunning=true;gamePaused=false;gameOverlay.classList.add("hidden");
+  gameLast=performance.now();requestAnimationFrame(gameLoop);
+}
+function endKustikGame(){
+  gameRunning=false;
+  if(gameScoreValue>(data.gameBest||0)){data.gameBest=gameScoreValue;localStorage.setItem(KEY,JSON.stringify(data))}
+  syncGameHud();
+  gameOverlayTitle.textContent="Забег окончен";
+  gameOverlayText.innerHTML=`Кустик собрал <b>${gameScoreValue}</b> огуречных очков.<br>${gameScoreValue>=80?"Великий огуречный пир состоялся.":"Огурец ещё где-то впереди."}`;
+  gameOverlay.querySelector("button").textContent="Ещё раз";
+  gameOverlay.classList.remove("hidden");
+}
+function toggleGamePause(){
+  if(!gameRunning)return;
+  gamePaused=!gamePaused;
+  if(!gamePaused){gameLast=performance.now();requestAnimationFrame(gameLoop)}
+  else{drawGame()}
+}
+function setShell(v){
+  gameHidden=!!v;
+  shellButton.classList.toggle("active",gameHidden);
+}
+shellButton.addEventListener("pointerdown",e=>{e.preventDefault();setShell(true)});
+["pointerup","pointercancel","pointerleave"].forEach(t=>shellButton.addEventListener(t,()=>setShell(false)));
+gameCanvas.addEventListener("pointerdown",e=>{e.preventDefault();setShell(true)});
+["pointerup","pointercancel","pointerleave"].forEach(t=>gameCanvas.addEventListener(t,()=>setShell(false)));
+
+function spawnGameObject(){
+  const r=Math.random();
+  if(r<.56){
+    gameObjects.push({type:"cucumber",x:700,y:292,w:46,h:34,v:gameSpeed});
+  }else if(r<.76){
+    gameObjects.push({type:"water",x:700,y:250,w:34,h:40,v:gameSpeed});
+  }else{
+    gameObjects.push({type:"rock",x:700,y:306,w:42,h:36,v:gameSpeed});
+  }
+}
+function spawnBird(){
+  gameObjects.push({type:"birdWarn",x:540,y:65,w:70,h:50,v:0,life:700});
+}
+function burst(x,y,emoji){
+  for(let i=0;i<7;i++)gameParticles.push({x,y,vx:rand(-55,55),vy:rand(-90,-25),life:650,emoji});
+}
+function rectHit(a,b,pad=0){
+  return a.x+pad<b.x+b.w && a.x+a.w-pad>b.x && a.y+pad<b.y+b.h && a.y+a.h-pad>b.y;
+}
+function hitPlayer(obj){
+  if(gameFlash>0)return;
+  gameLivesValue--;gameFlash=900;burst(snail.x+40,snail.y+15,"💥");syncGameHud();
+  if(gameLivesValue<=0)endKustikGame();
+}
+function updateGame(dt){
+  if(!gameRunning||gamePaused)return;
+  gameSpeed=Math.min(330,215+gameScoreValue*.55);
+  gameSpawn-=dt;gameBirdTimer-=dt;gameFlash=Math.max(0,gameFlash-dt);
+  if(gameSpawn<=0){spawnGameObject();gameSpawn=rand(650,1050)}
+  if(gameBirdTimer<=0 && gameScoreValue>=20){spawnBird();gameBirdTimer=rand(4200,7000)}
+
+  const snailBox={x:snail.x+8,y:snail.y+8,w:snail.w-16,h:snail.h-10};
+
+  for(const o of gameObjects){
+    if(o.type==="birdWarn"){
+      o.life-=dt;
+      if(o.life<=0){o.type="bird";o.x=720;o.y=115;o.w=90;o.h=55;o.v=510}
+      continue;
+    }
+    o.x-=o.v*dt/1000;
+    if(o.type==="bird")o.y+=65*dt/1000;
+
+    if(!o.hit && rectHit(snailBox,o,7)){
+      if(o.type==="cucumber"){
+        if(!gameHidden){o.hit=true;gameScoreValue+=10;burst(o.x,o.y,"🥒");syncGameHud()}
+      }else if(o.type==="water"){
+        if(!gameHidden){o.hit=true;gameScoreValue+=5;burst(o.x,o.y,"💧");syncGameHud()}
+      }else if(o.type==="rock"){
+        o.hit=true;hitPlayer(o);
+      }else if(o.type==="bird"){
+        o.hit=true;
+        if(gameHidden){burst(snail.x+40,snail.y,"🐚");gameScoreValue+=3;syncGameHud()}
+        else hitPlayer(o);
+      }
+    }
+  }
+  gameObjects=gameObjects.filter(o=>!o.hit && o.x>-130 && (o.life===undefined||o.life>0));
+  for(const p of gameParticles){p.life-=dt;p.x+=p.vx*dt/1000;p.y+=p.vy*dt/1000;p.vy+=150*dt/1000}
+  gameParticles=gameParticles.filter(p=>p.life>0);
+}
+function drawGame(){
+  const c=gameCtx,w=gameCanvas.width,h=gameCanvas.height;
+  c.clearRect(0,0,w,h);
+
+  // sky
+  const grd=c.createLinearGradient(0,0,0,h);
+  grd.addColorStop(0,document.body.classList.contains("dark")?"#1f3440":"#cfeeff");
+  grd.addColorStop(.72,document.body.classList.contains("dark")?"#314631":"#e6f3cf");
+  grd.addColorStop(.721,document.body.classList.contains("dark")?"#6a5037":"#b88957");
+  grd.addColorStop(1,document.body.classList.contains("dark")?"#4c3827":"#8a623d");
+  c.fillStyle=grd;c.fillRect(0,0,w,h);
+
+  // scenery
+  c.font="44px system-ui";c.globalAlpha=.8;
+  c.fillText("🌿",35,302);c.fillText("🍓",600,293);c.fillText("🌱",350,304);
+  c.globalAlpha=1;
+
+  // snail
+  if(gameFlash>0 && Math.floor(gameFlash/100)%2===0)c.globalAlpha=.35;
+  c.font=gameHidden?"62px system-ui":"58px system-ui";
+  c.fillText(gameHidden?"🐚":"🐌",snail.x,snail.y+43);
+  c.globalAlpha=1;
+
+  // objects
+  for(const o of gameObjects){
+    if(o.type==="cucumber"){c.font="44px system-ui";c.fillText("🥒",o.x,o.y+34)}
+    if(o.type==="water"){c.font="40px system-ui";c.fillText("💧",o.x,o.y+38)}
+    if(o.type==="rock"){c.font="42px system-ui";c.fillText("🪨",o.x,o.y+34)}
+    if(o.type==="birdWarn"){
+      c.font="24px system-ui";c.fillStyle="#a33";c.fillText("⚠️ ПТИЦА!",o.x,o.y+24)
+    }
+    if(o.type==="bird"){c.font="58px system-ui";c.fillText("🐦",o.x,o.y+48)}
+  }
+  for(const p of gameParticles){c.globalAlpha=Math.max(0,p.life/650);c.font="22px system-ui";c.fillText(p.emoji,p.x,p.y)}
+  c.globalAlpha=1;
+
+  if(gamePaused){
+    c.fillStyle="rgba(0,0,0,.35)";c.fillRect(0,0,w,h);
+    c.fillStyle="#fff";c.font="bold 36px system-ui";c.textAlign="center";c.fillText("ПАУЗА",w/2,h/2);c.textAlign="left";
+  }
+}
+function gameLoop(t){
+  if(!gameRunning||gamePaused)return;
+  const dt=Math.min(40,t-gameLast);gameLast=t;
+  updateGame(dt);drawGame();
+  if(gameRunning&&!gamePaused)requestAnimationFrame(gameLoop);
+}
+syncGameHud();drawGame();
+
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
 render();
 </script>
