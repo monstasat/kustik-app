@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#6aa56c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Кустик" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <title>Кустик 🐌</title>
+  <style>
+    :root{
+      --bg:#f4f7f1;--card:#fff;--text:#243026;--muted:#728074;
+      --accent:#6aa56c;--accent-dark:#4e8050;--soft:#e8f2e4;
+      --border:#e2e9df;--shadow:0 10px 28px rgba(39,61,41,.08);
+      --radius:22px;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif}
+    body{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+    .wrap{max-width:760px;margin:auto;padding:16px}
+    .hero{background:linear-gradient(145deg,#dcedd8,#f3f8ef);border:1px solid #d7e5d3;border-radius:28px;padding:20px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .hero:after{content:"🐌";position:absolute;right:8px;top:-6px;font-size:92px;opacity:.11}
+    .eyebrow{display:inline-block;background:#eff7ec;color:#446946;border-radius:999px;padding:6px 10px;font-weight:700;font-size:12px}
+    h1{font-size:34px;margin:8px 0 2px;letter-spacing:-.8px}
+    .sub{color:var(--muted);font-size:14px}
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+    .stat{background:rgba(255,255,255,.78);border:1px solid rgba(255,255,255,.95);border-radius:17px;padding:12px}
+    .stat b{display:block;font-size:12px;margin-bottom:4px}.stat span{font-size:14px;color:var(--muted)}
+    .screen{display:none;margin-top:16px}.screen.active{display:block}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
+    h2{font-size:19px;margin:0 0 12px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    button,.button{border:0;border-radius:14px;padding:11px 14px;font-weight:750;font-size:14px;background:var(--accent);color:#fff;cursor:pointer}
+    button.secondary,.button.secondary{background:#edf4ea;color:#365a38}
+    button.danger{background:#f8e8e8;color:#a04444}
+    input,select,textarea{width:100%;border:1px solid var(--border);border-radius:14px;background:#fbfcfa;padding:12px;font:inherit;color:var(--text);outline:none}
+    textarea{min-height:84px;resize:vertical}
+    label{display:block;font-size:13px;font-weight:700;margin:0 0 6px}.field{margin-bottom:12px}
+    .timeline{display:flex;flex-direction:column;gap:10px}
+    .event{border:1px solid var(--border);border-radius:16px;padding:13px;background:#fcfdfb}
+    .event-head{display:flex;justify-content:space-between;gap:10px}.date{font-size:11px;color:var(--muted);white-space:nowrap}
+    .tag{display:inline-block;margin-top:6px;background:var(--soft);color:#466c47;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:700}
+    .mealgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .meal{border:1px solid var(--border);border-radius:16px;padding:12px;background:#fcfdfb}.meal strong{font-size:17px}
+    .small{font-size:11px;color:var(--muted)}
+    .check label{display:flex;align-items:center;gap:10px;padding:9px 0;margin:0;font-weight:650}
+    .check input{width:auto;transform:scale(1.15)}
+    .gallery{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .photo{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#eef2ec}
+    .photo img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover}.photo .cap{padding:8px}
+    .empty{text-align:center;color:var(--muted);padding:24px 10px}
+    .nav{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(730px,calc(100% - 20px));z-index:20;background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:22px;box-shadow:0 12px 34px rgba(37,54,39,.16);padding:7px;display:grid;grid-template-columns:repeat(4,1fr)}
+    .nav button{background:transparent;color:var(--muted);padding:8px 4px;font-size:11px}.nav button.active{background:#eaf4e7;color:#315a34}.nav .ico{display:block;font-size:19px;margin-bottom:2px}
+    .toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%) translateY(20px);opacity:0;background:#263528;color:#fff;padding:10px 14px;border-radius:999px;font-size:13px;transition:.2s;z-index:40}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    @media(max-width:520px){.stats,.mealgrid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">Проект «Кустик»</div>
+    <h1>Кустик 🐌</h1>
+    <div class="sub">Найден на кустике клубники</div>
+    <div class="stats">
+      <div class="stat"><b>Сейчас</b><span id="statusNow">Прячется в раковине</span></div>
+      <div class="stat"><b>Любимая еда</b><span id="favoriteFood">🥒 Огурец</span></div>
+      <div class="stat"><b>Раковина</b><span id="shellStatus">Скол восстановился</span></div>
+      <div class="stat"><b>Последнее событие</b><span id="lastEvent">—</span></div>
+    </div>
+  </div>
+
+  <section id="home" class="screen active">
+    <div class="card">
+      <h2>Быстрое действие</h2>
+      <div class="actions">
+        <button onclick="quickEvent('Выполз и активен','Активность')">🐌 Выполз</button>
+        <button class="secondary" onclick="quickEvent('Спрятался в раковину','Покой')">🏠 Спрятался</button>
+        <button class="secondary" onclick="quickMeal('🥒 Огурец')">🥒 Ел огурец</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Террариум</h2>
+      <div class="check">
+        <label><input type="checkbox" data-check="moist"> Грунт влажный</label>
+        <label><input type="checkbox" data-check="food"> Свежая еда</label>
+        <label><input type="checkbox" data-check="calcium"> Сепия на месте</label>
+        <label><input type="checkbox" data-check="vent"> Вентиляция нормальная</label>
+        <label><input type="checkbox" data-check="hide"> Есть укрытие</label>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Данные</h2>
+      <div class="actions">
+        <button class="secondary" onclick="exportData()">Экспорт</button>
+        <label class="button secondary">Импорт<input id="importFile" type="file" accept=".json" hidden></label>
+        <button class="danger" onclick="resetData()">Сбросить</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="diary" class="screen">
+    <div class="card">
+      <h2>Добавить событие</h2>
+      <div class="field"><label>Что произошло?</label><input id="eventTitle" placeholder="Например: снова вышел после сна"></div>
+      <div class="field"><label>Категория</label><select id="eventCategory"><option>Активность</option><option>Покой</option><option>Здоровье</option><option>Террариум</option><option>Приключение</option></select></div>
+      <div class="field"><label>Комментарий</label><textarea id="eventNote" placeholder="Подробности..."></textarea></div>
+      <button onclick="addEvent()">Добавить</button>
+    </div>
+    <div class="card"><h2>Дневник</h2><div id="timeline" class="timeline"></div></div>
+  </section>
+
+  <section id="food" class="screen">
+    <div class="card">
+      <h2>Добавить кормление</h2>
+      <div class="field"><label>Еда</label><input id="foodName" placeholder="🥒 Огурец"></div>
+      <div class="field"><label>Как ел?</label><select id="foodRating"><option value="3">🔥 Жёстко ел</option><option value="2">🙂 Немного ел</option><option value="1">😐 Почти не тронул</option></select></div>
+      <button onclick="addMeal()">Записать</button>
+    </div>
+    <div class="card"><h2>История кормлений</h2><div id="mealList" class="mealgrid"></div></div>
+  </section>
+
+  <section id="photos" class="screen">
+    <div class="card">
+      <h2>Добавить фото</h2>
+      <div class="field"><label>Фото</label><input id="photoInput" type="file" accept="image/*"></div>
+      <div class="field"><label>Подпись</label><input id="photoCaption" placeholder="Например: после спасения из мусорки"></div>
+      <button onclick="addPhoto()">Добавить</button>
+      <div class="small" style="margin-top:8px">Фото сохраняются локально на устройстве.</div>
+    </div>
+    <div class="card"><h2>Галерея</h2><div id="gallery" class="gallery"></div></div>
+  </section>
+</div>
+
+<nav class="nav">
+  <button class="active" data-tab="home"><span class="ico">🏡</span>Главная</button>
+  <button data-tab="diary"><span class="ico">📔</span>Дневник</button>
+  <button data-tab="food"><span class="ico">🥒</span>Еда</button>
+  <button data-tab="photos"><span class="ico">📸</span>Фото</button>
+</nav>
+<div class="toast" id="toast">Сохранено</div>
+
+<script>
+const KEY="kustik-pwa-v1";
+const defaultData={
+  events:[
+    {title:"Найден на кустике клубники",category:"Приключение",note:"Начало истории Кустика.",date:"2026-09-21T12:00:00"},
+    {title:"Небольшой скол раковины после падения",category:"Здоровье",note:"Позже восстановился.",date:"2026-09-22T18:30:00"},
+    {title:"Мусорная катастрофа и спасение",category:"Приключение",note:"После спасения активно ел огурец.",date:"2026-10-01T18:00:00"}
+  ],
+  meals:[{food:"🥒 Огурец",rating:3,date:"2026-10-01T19:00:00"}],
+  photos:[],checks:{},statusNow:"Прячется в раковине",shellStatus:"Скол восстановился"
+};
+const clone=()=>JSON.parse(JSON.stringify(defaultData));
+let data=(()=>{try{const x=localStorage.getItem(KEY);return x?{...clone(),...JSON.parse(x)}:clone()}catch{return clone()}})();
+function toast(t="Сохранено"){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),1200)}
+function save(){localStorage.setItem(KEY,JSON.stringify(data));render();toast()}
+function fmt(x){return new Date(x).toLocaleString("ru-RU",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}
+function esc(s=""){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]))}
+function render(){
+  statusNow.textContent=data.statusNow||"—";shellStatus.textContent=data.shellStatus||"—";
+  const ev=[...data.events].sort((a,b)=>new Date(b.date)-new Date(a.date));lastEvent.textContent=ev[0]?.title||"—";
+  const counts={};data.meals.forEach(m=>counts[m.food]=(counts[m.food]||0)+(+m.rating||1));
+  favoriteFood.textContent=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0]||"—";
+  timeline.innerHTML=ev.length?ev.map(e=>`<div class="event"><div class="event-head"><div><strong>${esc(e.title)}</strong><br><span class="tag">${esc(e.category)}</span></div><div class="date">${fmt(e.date)}</div></div>${e.note?`<div style="margin-top:8px">${esc(e.note)}</div>`:""}</div>`).join(""):'<div class="empty">Пока событий нет.</div>';
+  const ms=[...data.meals].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  mealList.innerHTML=ms.length?ms.map(m=>`<div class="meal"><strong>${esc(m.food)}</strong><div>${+m.rating===3?"🔥 Жёстко ел":+m.rating===2?"🙂 Немного ел":"😐 Почти не тронул"}</div><div class="small">${fmt(m.date)}</div></div>`).join(""):'<div class="empty">Пока кормлений нет.</div>';
+  gallery.innerHTML=data.photos.length?[...data.photos].reverse().map(p=>`<div class="photo"><img src="${p.src}" alt="Кустик"><div class="cap"><strong>${esc(p.caption||"Кустик")}</strong><div class="small">${fmt(p.date)}</div></div></div>`).join(""):'<div class="empty" style="grid-column:1/-1">Добавь первое фото Кустика.</div>';
+  document.querySelectorAll("[data-check]").forEach(x=>x.checked=!!data.checks[x.dataset.check])
+}
+function addEvent(){
+  const title=eventTitle.value.trim();if(!title)return alert("Напиши, что произошло.");
+  const c=eventCategory.value;data.events.push({title,category:c,note:eventNote.value.trim(),date:new Date().toISOString()});
+  if(c==="Активность")data.statusNow="Активен";if(c==="Покой")data.statusNow="Прячется в раковине";
+  eventTitle.value="";eventNote.value="";save()
+}
+function quickEvent(title,category){data.events.push({title,category,note:"",date:new Date().toISOString()});data.statusNow=category==="Активность"?"Активен":"Прячется в раковине";save()}
+function addMeal(){const f=foodName.value.trim();if(!f)return alert("Укажи еду.");data.meals.push({food:f,rating:+foodRating.value,date:new Date().toISOString()});foodName.value="";save()}
+function quickMeal(food){data.meals.push({food,rating:3,date:new Date().toISOString()});data.events.push({title:"Жёстко ел огурец",category:"Активность",note:"",date:new Date().toISOString()});data.statusNow="Активен";save()}
+function addPhoto(){const f=photoInput.files[0];if(!f)return alert("Выбери фото.");const r=new FileReader();r.onload=()=>{data.photos.push({src:r.result,caption:photoCaption.value.trim(),date:new Date().toISOString()});photoInput.value="";photoCaption.value="";save()};r.readAsDataURL(f)}
+function exportData(){const b=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="kustik-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+importFile.addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{data={...clone(),...JSON.parse(r.result)};save()}catch{alert("Не удалось прочитать файл.")}};r.readAsText(f)})
+function resetData(){if(confirm("Сбросить все данные?")){localStorage.removeItem(KEY);data=clone();save()}}
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(b.dataset.tab).classList.add("active");scrollTo({top:0,behavior:"smooth"})});
+document.querySelectorAll("[data-check]").forEach(x=>x.onchange=()=>{data.checks[x.dataset.check]=x.checked;save()});
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+render();
+</script>
+</body>
+</html>
