@@ -61,6 +61,11 @@
     .daybar small{font-size:9px;color:var(--muted)}
     .chapter{border-left:3px solid #8db78e;padding:4px 0 4px 13px;margin:16px 0}
     .chapter h3{margin:0 0 5px;font-size:17px}.chapter p{margin:0;color:var(--muted);line-height:1.45;font-size:14px}
+    .chapter-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+    .chapter-actions{display:flex;gap:6px;flex:0 0 auto}
+    .chapter-actions button{padding:6px 8px;font-size:11px}
+    .story-form{border-top:1px solid var(--border);margin-top:14px;padding-top:14px}
+    .hidden{display:none!important}
     .photo{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#eef2ec}
     .photo img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover}.photo .cap{padding:8px}
     .empty{text-align:center;color:var(--muted);padding:24px 10px}
@@ -158,25 +163,23 @@
   <section id="story" class="screen">
     <div class="card">
       <h2>История Кустика</h2>
-      <div class="chapter">
-        <h3>Глава 0: Как всё началось</h3>
-        <p>Кустик жил на кустике клубники на даче. Потом его заметили, забрали домой — и началась совсем другая жизнь.</p>
-      </div>
-      <div class="chapter">
-        <h3>Глава 1: Новый дом</h3>
-        <p>Террариум, прогулки по рукам, первые наблюдения и открытие главной гастрономической страсти — огурца.</p>
-      </div>
-      <div class="chapter">
-        <h3>Глава 2: Падение</h3>
-        <p>После падения у Кустика появился небольшой скол на краю раковины. Он продолжал активно ползать, а скол со временем восстановился.</p>
-      </div>
-      <div class="chapter">
-        <h3>Глава 3: Девять дней тишины</h3>
-        <p>Кустик почти не выходил из раковины несколько дней подряд, но оставался жив и просто пережидал свой улиточный период покоя.</p>
-      </div>
-      <div class="chapter">
-        <h3>Глава 4: Мусорная катастрофа</h3>
-        <p>Из-за плесени содержимое террариума случайно оказалось в мусорке вместе с Кустиком. Его нашли, спасли — и после спасения он жёстко ел огурец.</p>
+      <div id="chapters"></div>
+
+      <div class="story-form">
+        <h2 id="chapterFormTitle">Новая глава</h2>
+        <input id="chapterEditIndex" type="hidden" value="-1">
+        <div class="field">
+          <label>Название главы</label>
+          <input id="chapterTitle" placeholder="Например: Глава 5: Возвращение">
+        </div>
+        <div class="field">
+          <label>Текст</label>
+          <textarea id="chapterText" placeholder="Что произошло с Кустиком?"></textarea>
+        </div>
+        <div class="actions">
+          <button onclick="saveChapter()">Сохранить главу</button>
+          <button id="cancelChapterEdit" class="secondary hidden" onclick="cancelChapterEdit()">Отмена</button>
+        </div>
       </div>
     </div>
   </section>
@@ -200,10 +203,22 @@ const defaultData={
     {title:"Мусорная катастрофа и спасение",category:"Приключение",note:"После спасения активно ел огурец.",date:"2026-10-01T18:00:00"}
   ],
   meals:[{food:"🥒 Огурец",rating:3,date:"2026-10-01T19:00:00"}],
-  photos:[],checks:{},coverPhoto:null,statusNow:"Прячется в раковине",shellStatus:"Скол восстановился"
+  photos:[],checks:{},coverPhoto:null,statusNow:"Прячется в раковине",shellStatus:"Скол восстановился",
+  chapters:[
+    {title:"Глава 0: Как всё началось",text:"Кустик жил на кустике клубники на даче. Потом его заметили, забрали домой — и началась совсем другая жизнь."},
+    {title:"Глава 1: Новый дом",text:"Террариум, прогулки по рукам, первые наблюдения и открытие главной гастрономической страсти — огурца."},
+    {title:"Глава 2: Падение",text:"После падения у Кустика появился небольшой скол на краю раковины. Он продолжал активно ползать, а скол со временем восстановился."},
+    {title:"Глава 3: Девять дней тишины",text:"Кустик почти не выходил из раковины несколько дней подряд, но оставался жив и просто пережидал свой улиточный период покоя."},
+    {title:"Глава 4: Мусорная катастрофа",text:"Из-за плесени содержимое террариума случайно оказалось в мусорке вместе с Кустиком. Его нашли, спасли — и после спасения он жёстко ел огурец."}
+  ]
 };
 const clone=()=>JSON.parse(JSON.stringify(defaultData));
-let data=(()=>{try{const x=localStorage.getItem(KEY);return x?{...clone(),...JSON.parse(x)}:clone()}catch{return clone()}})();
+let data=(()=>{try{
+  const x=localStorage.getItem(KEY);
+  if(!x)return clone();
+  const saved=JSON.parse(x), base=clone();
+  return {...base,...saved,chapters:Array.isArray(saved.chapters)?saved.chapters:base.chapters};
+}catch{return clone()}})();
 function toast(t="Сохранено"){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),1200)}
 function save(){localStorage.setItem(KEY,JSON.stringify(data));render();toast()}
 function fmt(x){return new Date(x).toLocaleString("ru-RU",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}
@@ -228,8 +243,25 @@ function renderCover(){
   if(data.coverPhoto){a.innerHTML=`<img src="${data.coverPhoto}" alt="Кустик">`;h.textContent="Главное фото Кустика"}
   else {a.textContent="🐌";h.textContent="Добавь фото в галерею и выбери «На главную»"}
 }
+function renderStory(){
+  const root=document.getElementById("chapters"); if(!root)return;
+  const list=Array.isArray(data.chapters)?data.chapters:[];
+  root.innerHTML=list.length?list.map((c,i)=>`
+    <div class="chapter">
+      <div class="chapter-head">
+        <div>
+          <h3>${esc(c.title)}</h3>
+          <p>${esc(c.text)}</p>
+        </div>
+        <div class="chapter-actions">
+          <button class="secondary" onclick="editChapter(${i})">✏️</button>
+          <button class="danger" onclick="deleteChapter(${i})">🗑</button>
+        </div>
+      </div>
+    </div>`).join(""):'<div class="empty">История пока пуста.</div>';
+}
 function render(){
-  statusNow.textContent=data.statusNow||"—";shellStatus.textContent=data.shellStatus||"—";renderCover();renderActivity();
+  statusNow.textContent=data.statusNow||"—";shellStatus.textContent=data.shellStatus||"—";renderCover();renderActivity();renderStory();
   const ev=[...data.events].sort((a,b)=>new Date(b.date)-new Date(a.date));lastEvent.textContent=ev[0]?.title||"—";
   const counts={};data.meals.forEach(m=>counts[m.food]=(counts[m.food]||0)+(+m.rating||1));
   favoriteFood.textContent=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0]||"—";
@@ -249,6 +281,36 @@ function quickEvent(title,category){data.events.push({title,category,note:"",dat
 function addMeal(){const f=foodName.value.trim();if(!f)return alert("Укажи еду.");data.meals.push({food:f,rating:+foodRating.value,date:new Date().toISOString()});foodName.value="";save()}
 function quickMeal(food){data.meals.push({food,rating:3,date:new Date().toISOString()});data.events.push({title:"Жёстко ел огурец",category:"Активность",note:"",date:new Date().toISOString()});data.statusNow="Активен";save()}
 function addPhoto(){const f=photoInput.files[0];if(!f)return alert("Выбери фото.");const r=new FileReader();r.onload=()=>{data.photos.push({src:r.result,caption:photoCaption.value.trim(),date:new Date().toISOString()});photoInput.value="";photoCaption.value="";save()};r.readAsDataURL(f)}
+function saveChapter(){
+  const title=chapterTitle.value.trim(), text=chapterText.value.trim();
+  if(!title)return alert("Напиши название главы.");
+  if(!text)return alert("Напиши текст главы.");
+  const i=+chapterEditIndex.value;
+  if(i>=0 && data.chapters[i]) data.chapters[i]={title,text};
+  else data.chapters.push({title,text});
+  cancelChapterEdit(false); save(); toast(i>=0?"Глава обновлена":"Глава добавлена");
+}
+function editChapter(i){
+  const c=data.chapters[i]; if(!c)return;
+  chapterEditIndex.value=String(i);
+  chapterTitle.value=c.title;
+  chapterText.value=c.text;
+  chapterFormTitle.textContent="Редактировать главу";
+  cancelChapterEdit.classList.remove("hidden");
+  chapterTitle.scrollIntoView({behavior:"smooth",block:"center"});
+}
+function cancelChapterEdit(clear=true){
+  chapterEditIndex.value="-1";
+  chapterTitle.value="";
+  chapterText.value="";
+  chapterFormTitle.textContent="Новая глава";
+  cancelChapterEdit.classList.add("hidden");
+}
+function deleteChapter(i){
+  if(!data.chapters[i])return;
+  if(!confirm(`Удалить «${data.chapters[i].title}»?`))return;
+  data.chapters.splice(i,1); save(); toast("Глава удалена");
+}
 function setCoverPhoto(i){data.coverPhoto=data.photos[i]?.src||null;save();toast("Фото на главной")}
 function exportData(){const b=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="kustik-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 importFile.addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{data={...clone(),...JSON.parse(r.result)};save()}catch{alert("Не удалось прочитать файл.")}};r.readAsText(f)})
