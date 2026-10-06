@@ -110,7 +110,7 @@
     .game-modal .big{font-size:43px;margin-bottom:5px}
     .game-modal h3{margin:0 0 6px;font-size:21px}
     .game-modal p{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.45}
-    .game-controls{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+    .game-controls{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:10px}
     .game-controls button{min-height:48px}
     .shell-btn.active{background:#6c604f}
     .game-tip{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.4}
@@ -270,17 +270,18 @@
           <div class="game-modal">
             <div class="big">🐌🥒</div>
             <h3 id="gameOverlayTitle">Путь к огурцу</h3>
-            <p id="gameOverlayText">Собирай огурцы и капли воды. Когда прилетает птица — прячь Кустика в раковину.</p>
+            <p id="gameOverlayText">Собирай огурцы и капли воды. Прыгай через камни, а когда прилетает птица — прячь Кустика в раковину.</p>
             <button onclick="startKustikGame()">Начать игру</button>
           </div>
         </div>
       </div>
 
       <div class="game-controls">
-        <button id="shellButton" class="shell-btn secondary">🐚 Держать: спрятаться</button>
+        <button id="jumpButton" onclick="jumpKustik()">⬆️ Прыжок</button>
+        <button id="shellButton" class="shell-btn secondary">🐚 Спрятаться</button>
         <button class="secondary" onclick="toggleGamePause()">⏸ Пауза</button>
       </div>
-      <div class="game-tip">Удерживай кнопку 🐚 или сам экран игры, чтобы Кустик спрятался. В раковине птица его не заденет, но огурцы он не собирает.</div>
+      <div class="game-tip">⬆️ Прыжок — перепрыгивай камни. 🐚 Удерживай кнопку или экран игры — прячься от птицы. Во время прыжка Кустик не может начать новый прыжок.</div>
 
       <div class="quote-card">
         «Мягкий. Сочный. Легко соскабливается радулой.<br><b>Это была любовь.</b>»
@@ -557,7 +558,8 @@ const shellButton=document.getElementById("shellButton");
 let gameRunning=false,gamePaused=false,gameHidden=false,gameScoreValue=0,gameLivesValue=3;
 let gameLast=0,gameSpawn=0,gameBirdTimer=0,gameFlash=0,gameSpeed=215;
 let gameObjects=[],gameParticles=[];
-const snail={x:110,y:305,w:74,h:48};
+const SNAIL_GROUND_Y=305;
+const snail={x:110,y:SNAIL_GROUND_Y,w:74,h:48,vy:0,jumping:false};
 
 function syncGameHud(){
   gameScore.textContent=gameScoreValue;
@@ -567,7 +569,7 @@ function syncGameHud(){
 function rand(a,b){return a+Math.random()*(b-a)}
 function resetGameWorld(){
   gameObjects=[];gameParticles=[];gameSpawn=0;gameBirdTimer=0;gameFlash=0;gameSpeed=215;
-  gameScoreValue=0;gameLivesValue=3;gameHidden=false;shellButton.classList.remove("active");
+  gameScoreValue=0;gameLivesValue=3;gameHidden=false;snail.y=SNAIL_GROUND_Y;snail.vy=0;snail.jumping=false;shellButton.classList.remove("active");
   syncGameHud();
 }
 function startKustikGame(){
@@ -588,6 +590,11 @@ function toggleGamePause(){
   gamePaused=!gamePaused;
   if(!gamePaused){gameLast=performance.now();requestAnimationFrame(gameLoop)}
   else{drawGame()}
+}
+function jumpKustik(){
+  if(!gameRunning||gamePaused||gameHidden||snail.jumping)return;
+  snail.jumping=true;
+  snail.vy=-610;
 }
 function setShell(v){
   gameHidden=!!v;
@@ -626,10 +633,21 @@ function updateGame(dt){
   if(!gameRunning||gamePaused)return;
   gameSpeed=Math.min(330,215+gameScoreValue*.55);
   gameSpawn-=dt;gameBirdTimer-=dt;gameFlash=Math.max(0,gameFlash-dt);
+
+  // Jump physics
+  if(snail.jumping){
+    snail.vy+=1500*dt/1000;
+    snail.y+=snail.vy*dt/1000;
+    if(snail.y>=SNAIL_GROUND_Y){
+      snail.y=SNAIL_GROUND_Y;
+      snail.vy=0;
+      snail.jumping=false;
+    }
+  }
   if(gameSpawn<=0){spawnGameObject();gameSpawn=rand(650,1050)}
   if(gameBirdTimer<=0 && gameScoreValue>=20){spawnBird();gameBirdTimer=rand(4200,7000)}
 
-  const snailBox={x:snail.x+8,y:snail.y+8,w:snail.w-16,h:snail.h-10};
+  const snailBox={x:snail.x+10,y:snail.y+8,w:snail.w-20,h:snail.h-12};
 
   for(const o of gameObjects){
     if(o.type==="birdWarn"){
@@ -774,6 +792,13 @@ function drawGame(){
   c.fillStyle="#d84949";c.beginPath();c.arc(615,288,10,0,Math.PI*2);c.fill();
   drawLeaf(c,611,277,7,-.2);drawLeaf(c,620,277,7,.3);
 
+  // Ground shadow makes the jump height obvious
+  c.save();
+  const jumpHeight=Math.max(0,SNAIL_GROUND_Y-snail.y);
+  c.globalAlpha=Math.max(.12,.28-jumpHeight/500);
+  c.fillStyle="#3d2c1f";
+  c.beginPath();c.ellipse(snail.x+40,SNAIL_GROUND_Y+45,30-Math.min(12,jumpHeight*.04),7,0,0,Math.PI*2);c.fill();
+  c.restore();
   drawSnail(c,snail.x,snail.y,gameHidden,gameFlash>0 && Math.floor(gameFlash/100)%2===0);
 
   for(const o of gameObjects){
@@ -802,6 +827,13 @@ function gameLoop(t){
   updateGame(dt);drawGame();
   if(gameRunning&&!gamePaused)requestAnimationFrame(gameLoop);
 }
+window.addEventListener("keydown",e=>{
+  if(e.code==="Space"||e.code==="ArrowUp"){e.preventDefault();jumpKustik()}
+  if(e.code==="ArrowDown"){e.preventDefault();setShell(true)}
+});
+window.addEventListener("keyup",e=>{
+  if(e.code==="ArrowDown")setShell(false);
+});
 syncGameHud();drawGame();
 
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
