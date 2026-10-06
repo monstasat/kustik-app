@@ -126,7 +126,7 @@
 <div class="wrap">
   <div class="hero">
     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Тема">🌙</button>
-    <div class="eyebrow">Проект «Кустик»</div>
+    <div class="eyebrow">Проект «Кустик» · v6.3.1</div>
     <h1>Кустик 🐌</h1>
     <div class="sub">Найден на кустике клубники</div>
     <div class="profile">
@@ -332,6 +332,7 @@
 
 <script>
 const KEY="kustik-pwa-v1";
+const APP_VERSION="6.3.1";
 const defaultData={
   events:[
     {title:"Найден на кустике клубники",category:"Приключение",note:"Начало истории Кустика.",date:"2026-09-21T12:00:00"},
@@ -840,7 +841,40 @@ window.addEventListener("keyup",e=>{
 });
 syncGameHud();drawGame();
 
-if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+
+if("serviceWorker" in navigator){
+  let reloadingForUpdate=false;
+
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{
+    if(reloadingForUpdate)return;
+    reloadingForUpdate=true;
+    location.reload();
+  });
+
+  window.addEventListener("load",async()=>{
+    try{
+      const reg=await navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"});
+      await reg.update();
+
+      if(reg.waiting){
+        reg.waiting.postMessage({type:"SKIP_WAITING"});
+      }
+
+      if(reg.installing){
+        reg.installing.addEventListener("statechange",()=>{
+          if(reg.installing && reg.installing.state==="installed" && navigator.serviceWorker.controller){
+            reg.installing.postMessage({type:"SKIP_WAITING"});
+          }
+        });
+      }
+
+      // Re-check while the app remains open.
+      setInterval(()=>reg.update().catch(()=>{}),60000);
+    }catch(e){
+      console.warn("Kustik SW update check failed",e);
+    }
+  });
+}
 render();
 </script>
 </body>
