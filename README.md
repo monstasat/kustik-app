@@ -12,3 +12,4 @@
    `https://<username>.github.io/kustik-app/`
 
 На iPhone откройте сайт в Safari → Поделиться → На экран «Домой».
+Deploy retry
