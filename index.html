@@ -126,7 +126,7 @@
 <div class="wrap">
   <div class="hero">
     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Тема">🌙</button>
-    <div class="eyebrow">Проект «Кустик» · v6.3.1</div>
+    <div class="eyebrow">Проект «Кустик» · v6.4</div>
     <h1>Кустик 🐌</h1>
     <div class="sub">Найден на кустике клубники</div>
     <div class="profile">
@@ -255,12 +255,13 @@
       <div class="game-head">
         <div>
           <h2 style="margin-bottom:3px">Кустик: путь к огурцу</h2>
-          <div class="small">Мини-игра проекта «Кустик»</div>
+          <div class="small">Мини-игра проекта «Кустик» · <b id="gameStage">Клубничная грядка</b></div>
         </div>
         <div class="game-stats">
           <span class="game-pill">🥒 <span id="gameScore">0</span></span>
           <span class="game-pill">🏆 <span id="gameBest">0</span></span>
           <span class="game-pill">❤️ <span id="gameLives">3</span></span>
+          <span class="game-pill">🛡 <span id="gameShield">0</span></span>
         </div>
       </div>
 
@@ -270,7 +271,7 @@
           <div class="game-modal">
             <div class="big">🐌🥒</div>
             <h3 id="gameOverlayTitle">Путь к огурцу</h3>
-            <p id="gameOverlayText">Собирай огурцы и капли воды. Прыгай через камни, а когда прилетает птица — прячь Кустика в раковину.</p>
+            <p id="gameOverlayText">Собирай огурцы и капли воды. Прыгай через камни, прячься от птиц и хватай сепию для защиты. Цель — 120 очков.</p>
             <button onclick="startKustikGame()">Начать игру</button>
           </div>
         </div>
@@ -281,7 +282,7 @@
         <button id="shellButton" class="shell-btn secondary">🐚 Спрятаться</button>
         <button class="secondary" onclick="toggleGamePause()">⏸ Пауза</button>
       </div>
-      <div class="game-tip">⬆️ Прыжок — перепрыгивай камни. 🐚 Удерживай кнопку или экран игры — прячься от птицы. Во время прыжка Кустик не может начать новый прыжок.</div>
+      <div class="game-tip">⬆️ Прыжок — через камни и мусорки. 🐚 Удерживай — прячься от птицы. Белая сепия даёт 🛡 защиту от одного удара. На 120 очках — победа.</div>
 
       <div class="quote-card">
         «Мягкий. Сочный. Легко соскабливается радулой.<br><b>Это была любовь.</b>»
@@ -332,7 +333,7 @@
 
 <script>
 const KEY="kustik-pwa-v1";
-const APP_VERSION="6.3.1";
+const APP_VERSION="6.4";
 const defaultData={
   events:[
     {title:"Найден на кустике клубники",category:"Приключение",note:"Начало истории Кустика.",date:"2026-09-21T12:00:00"},
@@ -556,7 +557,7 @@ const gameCanvas=document.getElementById("kustikGame");
 const gameCtx=gameCanvas.getContext("2d");
 const gameOverlay=document.getElementById("gameOverlay");
 const shellButton=document.getElementById("shellButton");
-let gameRunning=false,gamePaused=false,gameHidden=false,gameScoreValue=0,gameLivesValue=3;
+let gameRunning=false,gamePaused=false,gameHidden=false,gameScoreValue=0,gameLivesValue=3,gameShieldValue=0,gameWon=false;
 let gameLast=0,gameSpawn=0,gameBirdTimer=0,gameFlash=0,gameSpeed=215;
 let gameObjects=[],gameParticles=[];
 const SNAIL_GROUND_Y=305;
@@ -566,11 +567,13 @@ function syncGameHud(){
   gameScore.textContent=gameScoreValue;
   gameBest.textContent=data.gameBest||0;
   gameLives.textContent=gameLivesValue;
+  gameShield.textContent=gameShieldValue;
+  gameStage.textContent=getGameStage().name;
 }
 function rand(a,b){return a+Math.random()*(b-a)}
 function resetGameWorld(){
   gameObjects=[];gameParticles=[];gameSpawn=0;gameBirdTimer=0;gameFlash=0;gameSpeed=215;
-  gameScoreValue=0;gameLivesValue=3;gameHidden=false;snail.y=SNAIL_GROUND_Y;snail.vy=0;snail.jumping=false;shellButton.classList.remove("active");
+  gameScoreValue=0;gameLivesValue=3;gameShieldValue=0;gameWon=false;gameHidden=false;snail.y=SNAIL_GROUND_Y;snail.vy=0;snail.jumping=false;shellButton.classList.remove("active");
   syncGameHud();
 }
 function startKustikGame(){
@@ -606,12 +609,31 @@ shellButton.addEventListener("pointerdown",e=>{e.preventDefault();setShell(true)
 gameCanvas.addEventListener("pointerdown",e=>{e.preventDefault();setShell(true)});
 ["pointerup","pointercancel","pointerleave"].forEach(t=>gameCanvas.addEventListener(t,()=>setShell(false)));
 
+function getGameStage(){
+  if(gameScoreValue>=80)return {name:"Мусорная катастрофа",speed:1.18,bird:2600,trash:true};
+  if(gameScoreValue>=40)return {name:"Сад опасностей",speed:1.09,bird:3300,trash:false};
+  return {name:"Клубничная грядка",speed:1,bird:4300,trash:false};
+}
+function winKustikGame(){
+  if(!gameRunning||gameWon)return;
+  gameWon=true;gameRunning=false;
+  if(gameScoreValue>(data.gameBest||0)){data.gameBest=gameScoreValue;localStorage.setItem(KEY,JSON.stringify(data))}
+  syncGameHud();
+  gameOverlayTitle.textContent="ПОБЕДА!";
+  gameOverlayText.innerHTML=`Кустик добрался до легендарного огурца с <b>${gameScoreValue}</b> очками.<br><br>Мягкий. Сочный. Легко соскабливается радулой.<br><b>Это была любовь.</b>`;
+  gameOverlay.querySelector("button").textContent="Играть снова";
+  gameOverlay.classList.remove("hidden");
+}
 function spawnGameObject(){
-  const r=Math.random();
-  if(r<.56){
+  const r=Math.random(),stage=getGameStage();
+  if(r<.49){
     gameObjects.push({type:"cucumber",x:700,y:292,w:46,h:34,v:gameSpeed});
-  }else if(r<.76){
+  }else if(r<.66){
     gameObjects.push({type:"water",x:700,y:250,w:34,h:40,v:gameSpeed});
+  }else if(r<.74){
+    gameObjects.push({type:"calcium",x:700,y:270,w:40,h:30,v:gameSpeed});
+  }else if(stage.trash && r>.91){
+    gameObjects.push({type:"trash",x:700,y:278,w:54,h:64,v:gameSpeed*1.02});
   }else{
     gameObjects.push({type:"rock",x:700,y:306,w:42,h:36,v:gameSpeed});
   }
@@ -627,12 +649,16 @@ function rectHit(a,b,pad=0){
 }
 function hitPlayer(obj){
   if(gameFlash>0)return;
+  if(gameShieldValue>0){
+    gameShieldValue=0;gameFlash=450;burst(snail.x+40,snail.y+15,"shield");syncGameHud();return;
+  }
   gameLivesValue--;gameFlash=900;burst(snail.x+40,snail.y+15,"hit");syncGameHud();
   if(gameLivesValue<=0)endKustikGame();
 }
 function updateGame(dt){
   if(!gameRunning||gamePaused)return;
-  gameSpeed=Math.min(330,215+gameScoreValue*.55);
+  const stage=getGameStage();
+  gameSpeed=Math.min(370,(215+gameScoreValue*.55)*stage.speed);
   gameSpawn-=dt;gameBirdTimer-=dt;gameFlash=Math.max(0,gameFlash-dt);
 
   // Jump physics
@@ -646,7 +672,7 @@ function updateGame(dt){
     }
   }
   if(gameSpawn<=0){spawnGameObject();gameSpawn=rand(650,1050)}
-  if(gameBirdTimer<=0 && gameScoreValue>=10){spawnBird();gameBirdTimer=rand(3200,5200)}
+  if(gameBirdTimer<=0 && gameScoreValue>=10){spawnBird();gameBirdTimer=rand(stage.bird,stage.bird+1800)}
 
   const snailBox={x:snail.x+10,y:snail.y+8,w:snail.w-20,h:snail.h-12};
 
@@ -668,7 +694,9 @@ function updateGame(dt){
         if(!gameHidden){o.hit=true;gameScoreValue+=10;burst(o.x,o.y,"cucumber");syncGameHud()}
       }else if(o.type==="water"){
         if(!gameHidden){o.hit=true;gameScoreValue+=5;burst(o.x,o.y,"water");syncGameHud()}
-      }else if(o.type==="rock"){
+      }else if(o.type==="calcium"){
+        if(!gameHidden){o.hit=true;gameShieldValue=1;gameScoreValue+=2;burst(o.x,o.y,"shield");syncGameHud()}
+      }else if(o.type==="rock" || o.type==="trash"){
         o.hit=true;hitPlayer(o);
       }else if(o.type==="bird"){
         o.hit=true;
@@ -680,6 +708,7 @@ function updateGame(dt){
   gameObjects=gameObjects.filter(o=>!o.hit && o.x>-130 && (o.life===undefined||o.life>0));
   for(const p of gameParticles){p.life-=dt;p.x+=p.vx*dt/1000;p.y+=p.vy*dt/1000;p.vy+=150*dt/1000}
   gameParticles=gameParticles.filter(p=>p.life>0);
+  if(gameScoreValue>=120)winKustikGame();
 }
 function roundRectPath(c,x,y,w,h,r){
   const rr=Math.min(r,w/2,h/2);
@@ -728,6 +757,24 @@ function drawRock(c,x,y,w,h){
   c.fillStyle="#a4a19a";c.beginPath();c.arc(x+w*.54,y+h*.3,4,0,Math.PI*2);c.fill();
   c.restore();
 }
+function drawCalcium(c,x,y,w,h){
+  c.save();
+  c.fillStyle="#f7f2df";c.strokeStyle="#c8bea2";c.lineWidth=3;
+  c.beginPath();
+  c.ellipse(x+w/2,y+h/2,w*.46,h*.38,-.18,0,Math.PI*2);c.fill();c.stroke();
+  c.strokeStyle="#ddd4bb";c.lineWidth=2;
+  c.beginPath();c.moveTo(x+w*.25,y+h*.55);c.quadraticCurveTo(x+w*.5,y+h*.22,x+w*.78,y+h*.48);c.stroke();
+  c.restore();
+}
+function drawTrash(c,x,y,w,h){
+  c.save();
+  c.fillStyle="#68777a";c.strokeStyle="#3f4c4f";c.lineWidth=3;
+  roundRectPath(c,x+6,y+10,w-12,h-10,6);c.fill();c.stroke();
+  c.fillStyle="#4d5a5d";roundRectPath(c,x,y+3,w,12,5);c.fill();
+  c.strokeStyle="#91a0a3";c.lineWidth=2;
+  for(let i=1;i<4;i++){c.beginPath();c.moveTo(x+10+i*9,y+20);c.lineTo(x+10+i*9,y+h-8);c.stroke()}
+  c.restore();
+}
 function drawBird(c,x,y,w,h){
   c.save();c.translate(x+w/2,y+h/2);
   c.fillStyle="#3b4a52";c.strokeStyle="#26333a";c.lineWidth=2.5;
@@ -769,6 +816,7 @@ function drawParticle(c,p){
   if(p.kind==="cucumber"){c.fillStyle="#55a85f";c.beginPath();c.arc(p.x,p.y,5,0,Math.PI*2);c.fill()}
   else if(p.kind==="water"){c.fillStyle="#55b7ef";c.beginPath();c.arc(p.x,p.y,4,0,Math.PI*2);c.fill()}
   else if(p.kind==="hit"){c.strokeStyle="#e35a4f";c.lineWidth=3;c.beginPath();c.moveTo(p.x-5,p.y-5);c.lineTo(p.x+5,p.y+5);c.moveTo(p.x+5,p.y-5);c.lineTo(p.x-5,p.y+5);c.stroke()}
+  else if(p.kind==="shield"){c.strokeStyle="#f1e8b7";c.lineWidth=3;c.beginPath();c.arc(p.x,p.y,6,0,Math.PI*2);c.stroke()}
   else {c.strokeStyle="#d3b37b";c.lineWidth=3;c.beginPath();c.arc(p.x,p.y,5,0,Math.PI*2);c.stroke()}
   c.restore();
 }
@@ -804,12 +852,18 @@ function drawGame(){
   c.fillStyle="#3d2c1f";
   c.beginPath();c.ellipse(snail.x+40,SNAIL_GROUND_Y+45,30-Math.min(12,jumpHeight*.04),7,0,0,Math.PI*2);c.fill();
   c.restore();
+  if(gameShieldValue>0){
+    c.save();c.strokeStyle="rgba(245,240,205,.95)";c.lineWidth=5;
+    c.beginPath();c.ellipse(snail.x+40,snail.y+26,48,36,0,0,Math.PI*2);c.stroke();c.restore();
+  }
   drawSnail(c,snail.x,snail.y,gameHidden,gameFlash>0 && Math.floor(gameFlash/100)%2===0);
 
   for(const o of gameObjects){
     if(o.type==="cucumber")drawCucumber(c,o.x,o.y,o.w,o.h);
     if(o.type==="water")drawWater(c,o.x,o.y,o.w,o.h);
+    if(o.type==="calcium")drawCalcium(c,o.x,o.y,o.w,o.h);
     if(o.type==="rock")drawRock(c,o.x,o.y,o.w,o.h);
+    if(o.type==="trash")drawTrash(c,o.x,o.y,o.w,o.h);
     if(o.type==="birdWarn"){
       c.save();c.fillStyle="#b43b34";c.font="bold 23px system-ui";c.fillText("⚠ ПТИЦА!",o.x,o.y+24);c.restore();
     }
