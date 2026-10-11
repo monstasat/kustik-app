@@ -1,11 +1,10 @@
-const CACHE="kustik-v6-5";
+const CACHE="kustik-v6-6";
 const CORE=["./manifest.webmanifest","./app.js","./icon-192.png","./icon-512.png"];
 
 self.addEventListener("install",function(event){
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE).then(function(cache){return cache.addAll(CORE)}));
 });
-
 self.addEventListener("activate",function(event){
   event.waitUntil(Promise.all([
     self.clients.claim(),
@@ -14,11 +13,9 @@ self.addEventListener("activate",function(event){
     })
   ]));
 });
-
 self.addEventListener("message",function(event){
   if(event.data && event.data.type==="SKIP_WAITING")self.skipWaiting();
 });
-
 self.addEventListener("fetch",function(event){
   var req=event.request;
   if(req.method!=="GET")return;
@@ -33,9 +30,7 @@ self.addEventListener("fetch",function(event){
           caches.open(CACHE).then(function(cache){cache.put("./index.html",copy)});
           return resp;
         })
-        .catch(function(){
-          return caches.match("./index.html").then(function(r){return r||caches.match("./")});
-        })
+        .catch(function(){return caches.match("./index.html").then(function(r){return r||caches.match("./")})})
     );
     return;
   }

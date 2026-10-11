@@ -56,7 +56,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 var _this = this;
 var KEY = "kustik-pwa-v1";
-var APP_VERSION = "6.5";
+var APP_VERSION = "6.6";
 function storageGet(key) {
     try {
         return window.localStorage ? window.localStorage.getItem(key) : null;
@@ -93,6 +93,14 @@ var defaultData = {
     photos: [], checks: {}, coverPhoto: null, statusNow: "Прячется в раковине", shellStatus: "Скол восстановился",
     theme: "light",
     gameBest: 0,
+    pet: {
+        hunger: 88,
+        moisture: 90,
+        mood: 92,
+        energy: 84,
+        lastUpdate: Date.now(),
+        log: [{ time: Date.now(), text: "Виртуальный Кустик поселился в приложении." }]
+    },
     profile: { species: "Arianta arbustorum (предположительно)", age: "примерно 1–3 года", found: "2026-09-21", place: "кустик клубники на даче" },
     chapters: [
         { title: "Глава 0: Как всё началось", text: "Кустик жил на кустике клубники на даче. Потом его заметили, забрали домой — и началась совсем другая жизнь." },
@@ -109,7 +117,7 @@ var data = (function () {
         if (!x)
             return clone();
         var saved = JSON.parse(x), base = clone();
-        return __assign(__assign(__assign({}, base), saved), { theme: saved.theme || base.theme, profile: __assign(__assign({}, base.profile), (saved.profile || {})), chapters: Array.isArray(saved.chapters) ? saved.chapters : base.chapters });
+        return __assign(__assign(__assign({}, base), saved), { theme: saved.theme || base.theme, profile: __assign(__assign({}, base.profile), (saved.profile || {})), pet: __assign(__assign(__assign({}, base.pet), (saved.pet || {})), { log: Array.isArray(saved.pet && saved.pet.log) ? saved.pet.log : base.pet.log }), chapters: Array.isArray(saved.chapters) ? saved.chapters : base.chapters });
     }
     catch (_a) {
         return clone();
@@ -192,7 +200,8 @@ function getAchievementCount() {
 }
 function renderLevel() {
     var activeDays = new Set((data.events || []).filter(function (e) { return e.category === "Активность"; }).map(function (e) { return new Date(e.date).toISOString().slice(0, 10); })).size;
-    var xp = (data.events || []).length * 10 + (data.meals || []).length * 15 + (data.photos || []).length * 20 + (data.chapters || []).length * 25 + activeDays * 10 + getAchievementCount() * 30;
+    var petXp = Math.min(100, ((data.pet && data.pet.log) || []).length * 4);
+    var xp = (data.events || []).length * 10 + (data.meals || []).length * 15 + (data.photos || []).length * 20 + (data.chapters || []).length * 25 + activeDays * 10 + getAchievementCount() * 30 + petXp;
     var level = Math.floor(xp / 100) + 1;
     var progress = xp % 100;
     var names = ["", "Новичок", "Исследователь", "Огуречный эксперт", "Герой террариума", "Легенда Кустика", "Улиточный босс"];
@@ -248,10 +257,123 @@ function renderCompatibility() {
             note.textContent = "Яндекс Браузер обнаружен. Основные функции работают; установка как PWA зависит от версии Яндекс Браузера и Android.";
     }
 }
+function clampPet(v) { return Math.max(0, Math.min(100, v)); }
+function updatePetByTime() {
+    if (!data.pet)
+        data.pet = clone().pet;
+    var now = Date.now();
+    var last = Number(data.pet.lastUpdate) || now;
+    var hours = Math.max(0, Math.min(72, (now - last) / 3600000));
+    if (hours > 0.01) {
+        data.pet.hunger = clampPet(Number(data.pet.hunger) - hours * 1.35);
+        data.pet.moisture = clampPet(Number(data.pet.moisture) - hours * .9);
+        data.pet.energy = clampPet(Number(data.pet.energy) - hours * .45);
+        var stress = (data.pet.hunger < 35 ? 1.1 : 0) + (data.pet.moisture < 35 ? 1.1 : 0) + (data.pet.energy < 25 ? 0.55 : 0);
+        data.pet.mood = clampPet(Number(data.pet.mood) - hours * (.18 + stress));
+        data.pet.lastUpdate = now;
+        storageSet(KEY, JSON.stringify(data));
+    }
+}
+function petMeterClass(value) {
+    if (value < 25)
+        return "pet-fill bad";
+    if (value < 50)
+        return "pet-fill warn";
+    return "pet-fill";
+}
+function petStatus() {
+    var p = data.pet;
+    if (p.hunger < 20)
+        return { state: "Очень хочет есть", bubble: "Где… огурец?.. 🥒", face: "🐚" };
+    if (p.moisture < 20)
+        return { state: "Слишком сухо", bubble: "Капельку воды бы…", face: "🐚" };
+    if (p.energy < 18)
+        return { state: "Очень устал", bubble: "Всё. Я в домик.", face: "🐚" };
+    if (p.mood < 25)
+        return { state: "Немного грустит", bubble: "Сегодня я просто посижу.", face: "🐌" };
+    if (p.hunger > 80 && p.moisture > 75 && p.mood > 75)
+        return { state: "Чувствует себя великолепно", bubble: "Мягкий. Сочный. Легко соскабливается радулой.", face: "🐌" };
+    if (p.energy < 40)
+        return { state: "Хочет отдохнуть", bubble: "Ползать — тяжёлая работа.", face: "🐌" };
+    return { state: "Всё нормально", bubble: "Исследую территорию.", face: "🐌" };
+}
+function setPetBar(id, value) {
+    var bar = document.getElementById(id + "Bar");
+    var txt = document.getElementById(id + "Text");
+    if (!bar || !txt)
+        return;
+    var v = Math.round(clampPet(value));
+    bar.style.width = v + "%";
+    bar.className = petMeterClass(v);
+    txt.textContent = v + "%";
+}
+function renderPet() {
+    updatePetByTime();
+    if (!document.getElementById("petSnail"))
+        return;
+    var p = data.pet, s = petStatus();
+    petSnail.textContent = s.face;
+    petState.textContent = s.state;
+    petBubble.textContent = s.bubble;
+    setPetBar("petHunger", p.hunger);
+    setPetBar("petMoisture", p.moisture);
+    setPetBar("petMood", p.mood);
+    setPetBar("petEnergy", p.energy);
+    var log = Array.isArray(p.log) ? p.log.slice().reverse().slice(0, 8) : [];
+    petLog.innerHTML = log.length ? log.map(function (x) {
+        return '<div class="pet-log-item"><b>' + new Date(x.time).toLocaleString("ru-RU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) + '</b> · ' + esc(x.text) + '</div>';
+    }).join("") : '<div class="empty">Пока событий нет.</div>';
+}
+function petAnimate() {
+    var el = document.getElementById("petSnail");
+    if (!el)
+        return;
+    el.classList.add("bounce");
+    setTimeout(function () { el.classList.remove("bounce"); }, 220);
+}
+function addPetLog(text) {
+    if (!Array.isArray(data.pet.log))
+        data.pet.log = [];
+    data.pet.log.push({ time: Date.now(), text: text });
+    if (data.pet.log.length > 30)
+        data.pet.log = data.pet.log.slice(-30);
+}
+function petAction(kind) {
+    updatePetByTime();
+    var p = data.pet;
+    if (kind === "feed") {
+        p.hunger = clampPet(p.hunger + 34);
+        p.moisture = clampPet(p.moisture + 5);
+        p.mood = clampPet(p.mood + 7);
+        addPetLog("Кустик получил огурец. Это была любовь.");
+    }
+    else if (kind === "mist") {
+        p.moisture = clampPet(p.moisture + 32);
+        p.mood = clampPet(p.mood + 4);
+        addPetLog("В террариуме прошёл маленький дождь.");
+    }
+    else if (kind === "watch") {
+        p.mood = clampPet(p.mood + 13);
+        p.energy = clampPet(p.energy - 3);
+        addPetLog("За Кустиком немного понаблюдали.");
+    }
+    else if (kind === "rest") {
+        p.energy = clampPet(p.energy + 30);
+        p.mood = clampPet(p.mood + 4);
+        p.hunger = clampPet(p.hunger - 3);
+        addPetLog("Кустик ушёл отдыхать в раковину.");
+    }
+    p.lastUpdate = Date.now();
+    storageSet(KEY, JSON.stringify(data));
+    renderPet();
+    petAnimate();
+    toast("Кустик доволен");
+}
 function render() {
     var _a, _b;
     applyTheme();
     renderCompatibility();
+    renderPet();
     statusNow.textContent = data.statusNow || "—";
     shellStatus.textContent = data.shellStatus || "—";
     renderCover();
@@ -1105,7 +1227,7 @@ if ("serviceWorker" in navigator) {
         location.reload();
     });
     window.addEventListener("load", function () {
-        navigator.serviceWorker.register("./sw.js?v=6.5", { updateViaCache: "none" })
+        navigator.serviceWorker.register("./sw.js?v=6.6", { updateViaCache: "none" })
             .then(function (reg) {
             try {
                 reg.update();

@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Кустик" />
-  <link rel="manifest" href="./manifest.webmanifest?v=6.5" />
+  <link rel="manifest" href="./manifest.webmanifest?v=6.6" />
   <link rel="apple-touch-icon" href="./icon-192.png" />
   <title>Кустик 🐌</title>
   <style>
@@ -95,8 +95,8 @@
     .photo{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#eef2ec}
     .photo img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover}.photo .cap{padding:8px}
     .empty{text-align:center;color:var(--muted);padding:24px 10px}
-    .nav{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(730px,calc(100% - 20px));z-index:20;background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:22px;box-shadow:0 12px 34px rgba(37,54,39,.16);padding:7px;display:grid;grid-template-columns:repeat(6,1fr)}
-    .nav button{background:transparent;color:var(--muted);padding:8px 2px;font-size:10px}.nav button.active{background:#eaf4e7;color:#315a34}.nav .ico{display:block;font-size:19px;margin-bottom:2px}
+    .nav{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(730px,calc(100% - 20px));z-index:20;background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:22px;box-shadow:0 12px 34px rgba(37,54,39,.16);padding:7px;display:grid;grid-template-columns:repeat(7,1fr)}
+    .nav button{background:transparent;color:var(--muted);padding:8px 1px;font-size:9px}.nav button.active{background:#eaf4e7;color:#315a34}.nav .ico{display:block;font-size:19px;margin-bottom:2px}
 
     .game-card{padding:12px}
     .game-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
@@ -126,6 +126,47 @@
     .compat-item span{font-size:13px;font-weight:700}
     .compat-note{margin-top:9px;font-size:11px;line-height:1.4;color:var(--muted)}
 
+
+    .pet-stage{
+      position:relative;min-height:300px;border:1px solid var(--border);
+      border-radius:22px;overflow:hidden;
+      background:linear-gradient(180deg,#dff2d8 0%,#edf6dd 64%,#b88957 64%,#8c633f 100%);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      padding:22px 16px;
+    }
+    body.dark .pet-stage{background:linear-gradient(180deg,#23382a 0%,#2c422f 64%,#624930 64%,#493522 100%)}
+    .pet-sun{position:absolute;right:22px;top:20px;width:46px;height:46px;border-radius:50%;background:#ffe58a;opacity:.95}
+    body.dark .pet-sun{background:#d8e3e8}
+    .pet-leaf{position:absolute;font-size:34px;opacity:.8}
+    .pet-leaf.one{left:16px;bottom:48px;transform:rotate(-16deg)}
+    .pet-leaf.two{right:14px;bottom:46px;transform:rotate(18deg)}
+    .pet-snail{font-size:82px;line-height:1;filter:drop-shadow(0 8px 8px rgba(0,0,0,.12));transition:transform .2s}
+    .pet-snail.bounce{transform:translateY(-8px) scale(1.05)}
+    .pet-name{font-size:22px;font-weight:900;margin-top:9px}
+    .pet-state{margin-top:5px;color:var(--muted);font-size:13px;text-align:center}
+    .pet-bubble{
+      max-width:310px;margin:14px auto 0;background:rgba(255,255,255,.88);color:#314233;
+      border:1px solid rgba(255,255,255,.96);border-radius:18px;padding:11px 13px;
+      font-size:13px;line-height:1.45;text-align:center;box-shadow:0 6px 20px rgba(35,54,37,.1)
+    }
+    body.dark .pet-bubble{background:rgba(31,40,34,.9);color:#eef4ee;border-color:#445247}
+    .pet-meters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    .pet-meter{border:1px solid var(--border);border-radius:16px;padding:11px;background:#fcfdfb}
+    body.dark .pet-meter{background:#1c231e}
+    .pet-meter-top{display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:800;margin-bottom:7px}
+    .pet-track{height:9px;background:var(--soft);border-radius:999px;overflow:hidden}
+    .pet-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#70a973,#90c891);width:50%;transition:width .25s}
+    .pet-fill.warn{background:linear-gradient(90deg,#d69f55,#e4bd73)}
+    .pet-fill.bad{background:linear-gradient(90deg,#c85f59,#df817a)}
+    .pet-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+    .pet-actions button{min-height:48px}
+    .pet-log{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+    .pet-log-item{border-left:3px solid #83b084;padding:7px 10px;background:var(--soft);border-radius:0 12px 12px 0;font-size:12px}
+    .pet-badge{
+      display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;
+      background:var(--soft);font-size:11px;font-weight:800;margin-bottom:10px
+    }
+
     .toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%) translateY(20px);opacity:0;background:#263528;color:#fff;padding:10px 14px;border-radius:999px;font-size:13px;transition:.2s;z-index:40}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
     @media(max-width:520px){.stats,.mealgrid{grid-template-columns:1fr}}
@@ -135,7 +176,7 @@
 <div class="wrap">
   <div class="hero">
     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Тема">🌙</button>
-    <div class="eyebrow">Проект «Кустик» · v6.5</div>
+    <div class="eyebrow">Проект «Кустик» · v6.6</div>
     <h1>Кустик 🐌</h1>
     <div class="sub">Найден на кустике клубники</div>
     <div class="profile">
@@ -268,6 +309,59 @@
   </section>
 
 
+
+  <section id="pet" class="screen">
+    <div class="card">
+      <div class="pet-badge">🐌 Виртуальный Кустик</div>
+      <h2 style="margin-bottom:10px">Кустик живёт здесь</h2>
+
+      <div class="pet-stage">
+        <div class="pet-sun"></div>
+        <div class="pet-leaf one">🌿</div>
+        <div class="pet-leaf two">🍓</div>
+        <div id="petSnail" class="pet-snail">🐌</div>
+        <div class="pet-name">Кустик</div>
+        <div id="petState" class="pet-state">Чувствует себя отлично</div>
+        <div id="petBubble" class="pet-bubble">Интересно, где огурец?</div>
+      </div>
+
+      <div class="pet-meters">
+        <div class="pet-meter">
+          <div class="pet-meter-top"><span>🥒 Сытость</span><span id="petHungerText">100%</span></div>
+          <div class="pet-track"><div id="petHungerBar" class="pet-fill"></div></div>
+        </div>
+        <div class="pet-meter">
+          <div class="pet-meter-top"><span>💧 Влажность</span><span id="petMoistureText">100%</span></div>
+          <div class="pet-track"><div id="petMoistureBar" class="pet-fill"></div></div>
+        </div>
+        <div class="pet-meter">
+          <div class="pet-meter-top"><span>🙂 Настроение</span><span id="petMoodText">100%</span></div>
+          <div class="pet-track"><div id="petMoodBar" class="pet-fill"></div></div>
+        </div>
+        <div class="pet-meter">
+          <div class="pet-meter-top"><span>🌙 Энергия</span><span id="petEnergyText">100%</span></div>
+          <div class="pet-track"><div id="petEnergyBar" class="pet-fill"></div></div>
+        </div>
+      </div>
+
+      <div class="pet-actions">
+        <button onclick="petAction('feed')">🥒 Дать огурец</button>
+        <button class="secondary" onclick="petAction('mist')">💦 Опрыскать</button>
+        <button class="secondary" onclick="petAction('watch')">👀 Понаблюдать</button>
+        <button class="secondary" onclick="petAction('rest')">🌙 Отдыхать</button>
+      </div>
+
+      <div class="compat-note" style="margin-top:12px">
+        Это игровой режим внутри приложения. Он не заменяет уход за настоящим Кустиком.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Последние события виртуального Кустика</h2>
+      <div id="petLog" class="pet-log"></div>
+    </div>
+  </section>
+
   <section id="game" class="screen">
     <div class="card game-card">
       <div class="game-head">
@@ -344,11 +438,12 @@
   <button data-tab="diary"><span class="ico">📔</span>Дневник</button>
   <button data-tab="food"><span class="ico">🥒</span>Еда</button>
   <button data-tab="photos"><span class="ico">📸</span>Фото</button>
+  <button data-tab="pet"><span class="ico">🐌</span>Кустик</button>
   <button data-tab="game"><span class="ico">🎮</span>Игра</button>
   <button data-tab="story"><span class="ico">🎬</span>История</button>
 </nav>
 <div class="toast" id="toast">Сохранено</div>
 
-<script defer src="./app.js?v=6.5"></script>
+<script defer src="./app.js?v=6.6"></script>
 </body>
 </html>
