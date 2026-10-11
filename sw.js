@@ -1,4 +1,4 @@
-const CACHE="kustik-v6-6";
+const CACHE="kustik-v6-7";
 const CORE=["./manifest.webmanifest","./app.js","./icon-192.png","./icon-512.png"];
 
 self.addEventListener("install",function(event){
@@ -34,7 +34,6 @@ self.addEventListener("fetch",function(event){
     );
     return;
   }
-
   event.respondWith(
     caches.match(req).then(function(cached){
       var fresh=fetch(req,{cache:"no-cache"})

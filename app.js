@@ -56,7 +56,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 var _this = this;
 var KEY = "kustik-pwa-v1";
-var APP_VERSION = "6.6";
+var APP_VERSION = "6.7";
 function storageGet(key) {
     try {
         return window.localStorage ? window.localStorage.getItem(key) : null;
@@ -586,13 +586,16 @@ var gameCanvas = document.getElementById("kustikGame");
 var gameCtx = gameCanvas.getContext("2d");
 var gameOverlay = document.getElementById("gameOverlay");
 var shellButton = document.getElementById("shellButton");
-var gameRunning = false, gamePaused = false, gameHidden = false, gameScoreValue = 0, gameLivesValue = 3, gameShieldValue = 0, gameWon = false;
+var gameRunning = false, gamePaused = false, gameHidden = false, gameScoreValue = 0, gameCucumberCount = 0, gameLivesValue = 3, gameShieldValue = 0, gameWon = false;
+var bossActive = false, bossWaveTotal = 0, bossWaveSpawned = 0, bossWavePassed = 0, bossLevel = 0;
+var bossTriggered10 = false, bossTriggered18 = false, bossTriggered24 = false, finalCucumberSpawned = false;
 var gameLast = 0, gameSpawn = 0, gameBirdTimer = 0, gameFlash = 0, gameSpeed = 215;
 var gameObjects = [], gameParticles = [];
 var SNAIL_GROUND_Y = 305;
 var snail = { x: 110, y: SNAIL_GROUND_Y, w: 74, h: 48, vy: 0, jumping: false };
 function syncGameHud() {
     gameScore.textContent = gameScoreValue;
+    gameCucumbers.textContent = gameCucumberCount + "/25";
     gameBest.textContent = data.gameBest || 0;
     gameLives.textContent = gameLivesValue;
     gameShield.textContent = gameShieldValue;
@@ -607,10 +610,20 @@ function resetGameWorld() {
     gameFlash = 0;
     gameSpeed = 215;
     gameScoreValue = 0;
+    gameCucumberCount = 0;
     gameLivesValue = 3;
     gameShieldValue = 0;
     gameWon = false;
     gameHidden = false;
+    bossActive = false;
+    bossWaveTotal = 0;
+    bossWaveSpawned = 0;
+    bossWavePassed = 0;
+    bossLevel = 0;
+    bossTriggered10 = false;
+    bossTriggered18 = false;
+    bossTriggered24 = false;
+    finalCucumberSpawned = false;
     snail.y = SNAIL_GROUND_Y;
     snail.vy = 0;
     snail.jumping = false;
@@ -633,7 +646,7 @@ function endKustikGame() {
     }
     syncGameHud();
     gameOverlayTitle.textContent = "Забег окончен";
-    gameOverlayText.innerHTML = "\u041A\u0443\u0441\u0442\u0438\u043A \u0441\u043E\u0431\u0440\u0430\u043B <b>".concat(gameScoreValue, "</b> \u043E\u0433\u0443\u0440\u0435\u0447\u043D\u044B\u0445 \u043E\u0447\u043A\u043E\u0432.<br>").concat(gameScoreValue >= 80 ? "Великий огуречный пир состоялся." : "Огурец ещё где-то впереди.");
+    gameOverlayText.innerHTML = "\u041A\u0443\u0441\u0442\u0438\u043A \u0441\u043E\u0431\u0440\u0430\u043B <b>".concat(gameCucumberCount, "/25</b> \u043E\u0433\u0443\u0440\u0446\u043E\u0432 \u0438 <b>").concat(gameScoreValue, "</b> \u043E\u0447\u043A\u043E\u0432.<br>").concat(gameCucumberCount >= 20 ? "До легендарного огурца оставалось совсем чуть-чуть." : "Огуречный путь продолжается.");
     gameOverlay.querySelector("button").textContent = "Ещё раз";
     gameOverlay.classList.remove("hidden");
 }
@@ -682,11 +695,56 @@ function bindHoldControl(el) {
 bindHoldControl(shellButton);
 bindHoldControl(gameCanvas);
 function getGameStage() {
-    if (gameScoreValue >= 80)
-        return { name: "Мусорная катастрофа", speed: 1.18, bird: 2600, trash: true };
-    if (gameScoreValue >= 40)
-        return { name: "Сад опасностей", speed: 1.09, bird: 3300, trash: false };
-    return { name: "Клубничная грядка", speed: 1, bird: 4300, trash: false };
+    if (finalCucumberSpawned)
+        return { name: "Легендарный огурец", speed: 1.08, bird: 999999, trash: false };
+    if (bossActive)
+        return { name: "МУСОРНЫЙ БОСС", speed: 1.12, bird: 999999, trash: true };
+    if (gameCucumberCount >= 18)
+        return { name: "Мусорная зона", speed: 1.16, bird: 2800, trash: true };
+    if (gameCucumberCount >= 10)
+        return { name: "Сад опасностей", speed: 1.09, bird: 3400, trash: false };
+    return { name: "Клубничная грядка", speed: 1, bird: 4400, trash: false };
+}
+function startTrashBoss(level) {
+    if (bossActive || finalCucumberSpawned)
+        return;
+    bossActive = true;
+    bossLevel = level;
+    bossWaveSpawned = 0;
+    bossWavePassed = 0;
+    bossWaveTotal = level === 1 ? 4 : level === 2 ? 6 : 8;
+    gameObjects = gameObjects.filter(function (o) { return o.type === "birdWarn" || o.type === "bird" ? false : true; });
+    gameSpawn = 250;
+    toast("МУСОРНЫЙ БОСС!");
+}
+function maybeStartBoss() {
+    if (gameCucumberCount >= 24 && !bossTriggered24) {
+        bossTriggered24 = true;
+        startTrashBoss(3);
+        return;
+    }
+    if (gameCucumberCount >= 18 && !bossTriggered18) {
+        bossTriggered18 = true;
+        startTrashBoss(2);
+        return;
+    }
+    if (gameCucumberCount >= 10 && !bossTriggered10) {
+        bossTriggered10 = true;
+        startTrashBoss(1);
+    }
+}
+function finishTrashBoss() {
+    bossActive = false;
+    gameScoreValue += bossLevel * 20;
+    if (bossLevel === 3) {
+        finalCucumberSpawned = true;
+        gameObjects.push({ type: "goldenCucumber", x: 760, y: 260, w: 82, h: 58, v: 145 });
+        toast("ЛЕГЕНДАРНЫЙ ОГУРЕЦ!");
+    }
+    else {
+        toast("Босс пройден!");
+    }
+    syncGameHud();
 }
 function winKustikGame() {
     if (!gameRunning || gameWon)
@@ -699,22 +757,32 @@ function winKustikGame() {
     }
     syncGameHud();
     gameOverlayTitle.textContent = "ПОБЕДА!";
-    gameOverlayText.innerHTML = "\u041A\u0443\u0441\u0442\u0438\u043A \u0434\u043E\u0431\u0440\u0430\u043B\u0441\u044F \u0434\u043E \u043B\u0435\u0433\u0435\u043D\u0434\u0430\u0440\u043D\u043E\u0433\u043E \u043E\u0433\u0443\u0440\u0446\u0430 \u0441 <b>".concat(gameScoreValue, "</b> \u043E\u0447\u043A\u0430\u043C\u0438.<br><br>\u041C\u044F\u0433\u043A\u0438\u0439. \u0421\u043E\u0447\u043D\u044B\u0439. \u041B\u0435\u0433\u043A\u043E \u0441\u043E\u0441\u043A\u0430\u0431\u043B\u0438\u0432\u0430\u0435\u0442\u0441\u044F \u0440\u0430\u0434\u0443\u043B\u043E\u0439.<br><b>\u042D\u0442\u043E \u0431\u044B\u043B\u0430 \u043B\u044E\u0431\u043E\u0432\u044C.</b>");
+    gameOverlayText.innerHTML = "\u041A\u0443\u0441\u0442\u0438\u043A \u0441\u043E\u0431\u0440\u0430\u043B \u0432\u0441\u0435 <b>25 \u043E\u0433\u0443\u0440\u0446\u043E\u0432</b>, \u043F\u0435\u0440\u0435\u0436\u0438\u043B \u0442\u0440\u0451\u0445 \u043C\u0443\u0441\u043E\u0440\u043D\u044B\u0445 \u0431\u043E\u0441\u0441\u043E\u0432 \u0438 \u0434\u043E\u0431\u0440\u0430\u043B\u0441\u044F \u0434\u043E <b>\u041B\u0435\u0433\u0435\u043D\u0434\u0430\u0440\u043D\u043E\u0433\u043E \u041E\u0433\u0443\u0440\u0446\u0430</b>.<br><br>\u0417\u043E\u043B\u043E\u0442\u043E\u0439. \u041E\u0433\u0440\u043E\u043C\u043D\u044B\u0439. \u0418\u0434\u0435\u0430\u043B\u044C\u043D\u043E \u0445\u0440\u0443\u0441\u0442\u044F\u0449\u0438\u0439.<br><br>\u041C\u044F\u0433\u043A\u0438\u0439. \u0421\u043E\u0447\u043D\u044B\u0439. \u041B\u0435\u0433\u043A\u043E \u0441\u043E\u0441\u043A\u0430\u0431\u043B\u0438\u0432\u0430\u0435\u0442\u0441\u044F \u0440\u0430\u0434\u0443\u043B\u043E\u0439.<br><b>\u042D\u0442\u043E \u0431\u044B\u043B\u0430 \u043B\u044E\u0431\u043E\u0432\u044C.</b>";
     gameOverlay.querySelector("button").textContent = "Играть снова";
     gameOverlay.classList.remove("hidden");
 }
 function spawnGameObject() {
     var r = Math.random(), stage = getGameStage();
-    if (r < .49) {
+    if (bossActive) {
+        if (bossWaveSpawned < bossWaveTotal) {
+            bossWaveSpawned++;
+            var size = bossLevel === 3 ? 1.18 : bossLevel === 2 ? 1.08 : 1;
+            gameObjects.push({ type: "trashBoss", x: 720, y: 270, w: 58 * size, h: 70 * size, v: gameSpeed * (1.05 + bossLevel * .04), bossIndex: bossWaveSpawned });
+        }
+        return;
+    }
+    if (finalCucumberSpawned)
+        return;
+    if (r < .48) {
         gameObjects.push({ type: "cucumber", x: 700, y: 292, w: 46, h: 34, v: gameSpeed });
     }
-    else if (r < .66) {
+    else if (r < .65) {
         gameObjects.push({ type: "water", x: 700, y: 250, w: 34, h: 40, v: gameSpeed });
     }
-    else if (r < .74) {
+    else if (r < .73) {
         gameObjects.push({ type: "calcium", x: 700, y: 270, w: 40, h: 30, v: gameSpeed });
     }
-    else if (stage.trash && r > .91) {
+    else if (stage.trash && r > .89) {
         gameObjects.push({ type: "trash", x: 700, y: 278, w: 54, h: 64, v: gameSpeed * 1.02 });
     }
     else {
@@ -769,9 +837,9 @@ function updateGame(dt) {
     }
     if (gameSpawn <= 0) {
         spawnGameObject();
-        gameSpawn = rand(650, 1050);
+        gameSpawn = bossActive ? rand(720, 980) : rand(650, 1050);
     }
-    if (gameBirdTimer <= 0 && gameScoreValue >= 10) {
+    if (!bossActive && !finalCucumberSpawned && gameBirdTimer <= 0 && gameCucumberCount >= 4) {
         spawnBird();
         gameBirdTimer = rand(stage.bird, stage.bird + 1800);
     }
@@ -799,8 +867,20 @@ function updateGame(dt) {
                 if (!gameHidden) {
                     o.hit = true;
                     gameScoreValue += 10;
+                    gameCucumberCount++;
                     burst(o.x, o.y, "cucumber");
                     syncGameHud();
+                    maybeStartBoss();
+                }
+            }
+            else if (o.type === "goldenCucumber") {
+                if (!gameHidden) {
+                    o.hit = true;
+                    gameScoreValue += 100;
+                    gameCucumberCount = 25;
+                    burst(o.x, o.y, "gold");
+                    syncGameHud();
+                    winKustikGame();
                 }
             }
             else if (o.type === "water") {
@@ -820,7 +900,7 @@ function updateGame(dt) {
                     syncGameHud();
                 }
             }
-            else if (o.type === "rock" || o.type === "trash") {
+            else if (o.type === "rock" || o.type === "trash" || o.type === "trashBoss") {
                 o.hit = true;
                 hitPlayer(o);
             }
@@ -836,17 +916,27 @@ function updateGame(dt) {
             }
         }
     }
+    for (var _a = 0, gameObjects_2 = gameObjects; _a < gameObjects_2.length; _a++) {
+        var o = gameObjects_2[_a];
+        if (o.type === "trashBoss" && !o.hit && !o.countedPass && o.x <= -100) {
+            o.countedPass = true;
+            bossWavePassed++;
+        }
+    }
     gameObjects = gameObjects.filter(function (o) { return !o.hit && o.x > -130 && (o.life === undefined || o.life > 0); });
-    for (var _a = 0, gameParticles_1 = gameParticles; _a < gameParticles_1.length; _a++) {
-        var p = gameParticles_1[_a];
+    if (bossActive && bossWaveSpawned >= bossWaveTotal) {
+        var bossObjectsLeft = gameObjects.some(function (o) { return o.type === "trashBoss"; });
+        if (!bossObjectsLeft)
+            finishTrashBoss();
+    }
+    for (var _b = 0, gameParticles_1 = gameParticles; _b < gameParticles_1.length; _b++) {
+        var p = gameParticles_1[_b];
         p.life -= dt;
         p.x += p.vx * dt / 1000;
         p.y += p.vy * dt / 1000;
         p.vy += 150 * dt / 1000;
     }
     gameParticles = gameParticles.filter(function (p) { return p.life > 0; });
-    if (gameScoreValue >= 120)
-        winKustikGame();
 }
 function roundRectPath(c, x, y, w, h, r) {
     var rr = Math.min(r, w / 2, h / 2);
@@ -888,6 +978,56 @@ function drawCucumber(c, x, y, w, h) {
         c.beginPath();
         c.arc(x + 9 + i * (w - 18) / 4, y + h * .35 + (i % 2) * 5, 2.2, 0, Math.PI * 2);
         c.fill();
+    }
+    c.restore();
+}
+function drawGoldenCucumber(c, x, y, w, h) {
+    c.save();
+    var pulse = 1 + Math.sin(Date.now() / 130) * .06;
+    c.translate(x + w / 2, y + h / 2);
+    c.scale(pulse, pulse);
+    var glow = c.createRadialGradient(0, 0, 5, 0, 0, w * .72);
+    glow.addColorStop(0, "rgba(255,241,120,.55)");
+    glow.addColorStop(1, "rgba(255,215,40,0)");
+    c.fillStyle = glow;
+    c.beginPath();
+    c.arc(0, 0, w * .72, 0, Math.PI * 2);
+    c.fill();
+    roundRectPath(c, -w / 2, -h / 2, w, h, h * .45);
+    var g = c.createLinearGradient(-w / 2, 0, w / 2, 0);
+    g.addColorStop(0, "#e4b825");
+    g.addColorStop(.48, "#fff08a");
+    g.addColorStop(1, "#c99412");
+    c.fillStyle = g;
+    c.fill();
+    c.strokeStyle = "#a87a09";
+    c.lineWidth = 4;
+    c.stroke();
+    c.fillStyle = "#fff7b8";
+    for (var i = 0; i < 7; i++) {
+        c.beginPath();
+        c.arc(-w * .32 + i * (w * .64 / 6), -h * .1 + (i % 2) * 9, 3, 0, Math.PI * 2);
+        c.fill();
+    }
+    c.fillStyle = "#fff3a0";
+    for (var s = 0; s < 4; s++) {
+        var a = s * Math.PI / 2 + Date.now() / 500;
+        var sx = Math.cos(a) * w * .65, sy = Math.sin(a) * h * .85;
+        c.save();
+        c.translate(sx, sy);
+        c.rotate(a);
+        c.beginPath();
+        c.moveTo(0, -7);
+        c.lineTo(2, -2);
+        c.lineTo(7, 0);
+        c.lineTo(2, 2);
+        c.lineTo(0, 7);
+        c.lineTo(-2, 2);
+        c.lineTo(-7, 0);
+        c.lineTo(-2, -2);
+        c.closePath();
+        c.fill();
+        c.restore();
     }
     c.restore();
 }
@@ -1068,6 +1208,12 @@ function drawParticle(c, p) {
         c.arc(p.x, p.y, 5, 0, Math.PI * 2);
         c.fill();
     }
+    else if (p.kind === "gold") {
+        c.fillStyle = "#ffd84a";
+        c.beginPath();
+        c.arc(p.x, p.y, 6, 0, Math.PI * 2);
+        c.fill();
+    }
     else if (p.kind === "water") {
         c.fillStyle = "#55b7ef";
         c.beginPath();
@@ -1154,17 +1300,19 @@ function drawGame() {
         c.restore();
     }
     drawSnail(c, snail.x, snail.y, gameHidden, gameFlash > 0 && Math.floor(gameFlash / 100) % 2 === 0);
-    for (var _i = 0, gameObjects_2 = gameObjects; _i < gameObjects_2.length; _i++) {
-        var o = gameObjects_2[_i];
+    for (var _i = 0, gameObjects_3 = gameObjects; _i < gameObjects_3.length; _i++) {
+        var o = gameObjects_3[_i];
         if (o.type === "cucumber")
             drawCucumber(c, o.x, o.y, o.w, o.h);
+        if (o.type === "goldenCucumber")
+            drawGoldenCucumber(c, o.x, o.y, o.w, o.h);
         if (o.type === "water")
             drawWater(c, o.x, o.y, o.w, o.h);
         if (o.type === "calcium")
             drawCalcium(c, o.x, o.y, o.w, o.h);
         if (o.type === "rock")
             drawRock(c, o.x, o.y, o.w, o.h);
-        if (o.type === "trash")
+        if (o.type === "trash" || o.type === "trashBoss")
             drawTrash(c, o.x, o.y, o.w, o.h);
         if (o.type === "birdWarn") {
             c.save();
@@ -1175,6 +1323,18 @@ function drawGame() {
         }
         if (o.type === "bird")
             drawBird(c, o.x, o.y, o.w, o.h);
+    }
+    if (bossActive) {
+        c.save();
+        c.fillStyle = "rgba(30,25,20,.72)";
+        roundRectPath(c, 170, 18, 340, 42, 16);
+        c.fill();
+        c.fillStyle = "#fff";
+        c.font = "bold 19px system-ui";
+        c.textAlign = "center";
+        c.fillText("МУСОРНЫЙ БОСС " + bossLevel + "  ·  " + Math.min(bossWavePassed, bossWaveTotal) + "/" + bossWaveTotal, 340, 46);
+        c.textAlign = "left";
+        c.restore();
     }
     for (var _a = 0, gameParticles_2 = gameParticles; _a < gameParticles_2.length; _a++) {
         var p = gameParticles_2[_a];
@@ -1227,7 +1387,7 @@ if ("serviceWorker" in navigator) {
         location.reload();
     });
     window.addEventListener("load", function () {
-        navigator.serviceWorker.register("./sw.js?v=6.6", { updateViaCache: "none" })
+        navigator.serviceWorker.register("./sw.js?v=6.7", { updateViaCache: "none" })
             .then(function (reg) {
             try {
                 reg.update();
